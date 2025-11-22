@@ -70,6 +70,39 @@ export function useEntryFee() {
   };
 }
 
+export function useTimerDuration() {
+  const { data, isLoading } = useReadContract({
+    address: BUTTON_GAME_ADDRESS,
+    abi: BUTTON_GAME_ABI,
+    functionName: "timerDuration",
+    query: {
+      enabled: isContractDeployed(BUTTON_GAME_ADDRESS),
+    },
+  });
+
+  return {
+    timerDuration: data,
+    isLoading,
+  };
+}
+
+export function useInitialPrizePool() {
+  const { data, isLoading } = useReadContract({
+    address: BUTTON_GAME_ADDRESS,
+    abi: BUTTON_GAME_ABI,
+    functionName: "initialPrizePool",
+    query: {
+      enabled: isContractDeployed(BUTTON_GAME_ADDRESS),
+    },
+  });
+
+  return {
+    initialPrizePool: data,
+    initialPrizePoolFormatted: data ? formatUnits(data, 18) : "0",
+    isLoading,
+  };
+}
+
 export function useFreePlayEligibility() {
   const { address } = useAccount();
   const { data: lastFreePlay, isLoading } = useReadContract({

@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   useGameState,
   useEntryFee,
+  useTimerDuration,
+  useInitialPrizePool,
   usePressButton,
   useClaimPrize,
   useFreePlayEligibility,
@@ -39,20 +41,68 @@ export default function Home() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { gameState, isLoading: gameStateLoading, refetch } = useGameState();
+  const { entryFeeFormatted = "0", entryFee } = useEntryFee();
+  const { timerDuration, isLoading: timerDurationLoading } = useTimerDuration();
+  const { initialPrizePool, initialPrizePoolFormatted, isLoading: initialPrizePoolLoading } = useInitialPrizePool();
+  
+  // Debug when timerDuration and initialPrizePool load
+  useEffect(() => {
+    if (!timerDurationLoading && timerDuration !== undefined) {
+      console.log('[DEBUG] TimerDuration loaded:', {
+        timerDuration: timerDuration.toString(),
+        timerDurationSeconds: Number(timerDuration),
+        timerDurationMinutes: Number(timerDuration) / 60,
+        isZero: timerDuration === 0n,
+        warning: timerDuration === 0n ? '⚠️ TIMER DURATION IS ZERO! This will cause immediate timer expiration.' : 'OK',
+      });
+    }
+  }, [timerDuration, timerDurationLoading]);
+  
+  useEffect(() => {
+    if (!initialPrizePoolLoading && initialPrizePool !== undefined) {
+      console.log('[DEBUG] InitialPrizePool loaded:', {
+        initialPrizePool: initialPrizePool.toString(),
+        initialPrizePoolFormatted,
+        isZero: initialPrizePool === 0n,
+        warning: initialPrizePool === 0n ? '⚠️ INITIAL PRIZE POOL IS ZERO! New games will start with 0 prize pool.' : 'OK',
+      });
+    }
+  }, [initialPrizePool, initialPrizePoolFormatted, initialPrizePoolLoading]);
   
   // Debug game state changes
   useEffect(() => {
     if (gameState) {
+      const now = Math.floor(Date.now() / 1000);
+      const timerEndTimestamp = Number(gameState.timerEnd);
+      const isTimerExpired = now >= timerEndTimestamp;
+      
+      const timeSinceTimerEnd = now - timerEndTimestamp;
+      const expectedNewTimerEnd = timerEndTimestamp + (timerDuration ? Number(timerDuration) : 0);
+      
       console.log('[DEBUG] Game state updated:', {
         round: gameState.currentRound.toString(),
         timeRemaining: gameState.timeRemaining.toString(),
+        timerEnd: gameState.timerEnd.toString(),
+        timerEndDate: new Date(timerEndTimestamp * 1000).toISOString(),
+        currentTimestamp: now,
+        currentDate: new Date(now * 1000).toISOString(),
+        isTimerExpired,
+        timeSinceTimerEnd: `${timeSinceTimerEnd} seconds (${Math.floor(timeSinceTimerEnd / 60)} minutes)`,
         prizePool: gameState.prizePool.toString(),
         lastPlayer: gameState.lastPlayer,
         gameActive: gameState.gameActive,
+        timerDuration: timerDuration?.toString() || 'loading',
+        initialPrizePool: initialPrizePool?.toString() || 'loading',
+        initialPrizePoolFormatted: initialPrizePoolFormatted || 'loading',
+        expectedNewTimerEnd: timerDuration ? new Date(expectedNewTimerEnd * 1000).toISOString() : 'N/A',
+        analysis: isTimerExpired && gameState.prizePool === 0n && (!gameState.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000")
+          ? "Prize was claimed, but new game timer not set properly"
+          : isTimerExpired && gameState.prizePool > 0n
+          ? "Timer expired but prize not claimed yet"
+          : "Game is active",
       });
     }
-  }, [gameState]);
-  const { entryFeeFormatted = "0", entryFee } = useEntryFee();
+  }, [gameState, timerDuration, initialPrizePool, initialPrizePoolFormatted]);
   const { pressButton, isPending: isPressing, isConfirming, isSuccess: pressSuccess, error: pressError, isUsingFreePlay } = usePressButton();
   const { claimPrize, isPending: isClaiming, isSuccess: claimSuccess, error: claimError } = useClaimPrize();
   const { isEligible: isFreePlayEligible, timeUntilFreePlay } = useFreePlayEligibility();
@@ -83,34 +133,29 @@ export default function Home() {
     }
   );
 
-  // Update time remaining when game state changes
+  // Calculate time remaining from timerEnd timestamp (single source of truth)
+  // This avoids conflicts between contract value and client-side countdown
   useEffect(() => {
-    if (gameState?.timeRemaining !== undefined) {
-      console.log('[DEBUG] Time remaining updated:', {
-        old: timeRemaining.toString(),
-        new: gameState.timeRemaining.toString(),
-        round: gameState.currentRound.toString(),
-      });
-      setTimeRemaining(gameState.timeRemaining);
+    if (!gameState?.timerEnd) {
+      setTimeRemaining(0n);
+      return;
     }
-  }, [gameState?.timeRemaining, gameState?.currentRound, timeRemaining]);
 
-  // Client-side countdown
-  useEffect(() => {
-    if (!gameState || gameState.timeRemaining === 0n) return;
+    const updateTimer = () => {
+      const now = Math.floor(Date.now() / 1000);
+      const timerEnd = Number(gameState.timerEnd);
+      const remaining = BigInt(Math.max(0, timerEnd - now));
+      setTimeRemaining(remaining);
+    };
 
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1n) {
-          refetch();
-          return 0n;
-        }
-        return prev - 1n;
-      });
-    }, 1000);
+    // Update immediately
+    updateTimer();
+
+    // Update every second
+    const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [gameState, refetch]);
+  }, [gameState?.timerEnd, gameState?.currentRound]);
 
   // Refetch game state after successful press
   useEffect(() => {
@@ -169,39 +214,6 @@ export default function Home() {
     }
   }, [gameState?.currentRound, lastKnownRound, refetch]);
 
-  // Detect when prize was already claimed but new game hasn't started yet
-  // This happens when timer = 0, prizePool = 0, lastPlayer = 0
-  // In this case, we need to wait for the new game to start (timeRemaining > 0)
-  // If it stays in this state, refetch periodically
-  useEffect(() => {
-    if (
-      gameState &&
-      gameState.timeRemaining === 0n &&
-      gameState.prizePool === 0n &&
-      (!gameState.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000") &&
-      gameState.gameActive
-    ) {
-      console.log('[DEBUG] Prize claimed state detected - starting periodic refetch', {
-        round: gameState.currentRound.toString(),
-        timeRemaining: gameState.timeRemaining.toString(),
-        prizePool: gameState.prizePool.toString(),
-        lastPlayer: gameState.lastPlayer,
-        gameActive: gameState.gameActive,
-      });
-      
-      // Prize was claimed, but new game timer hasn't started yet
-      // Refetch every 3 seconds until new game starts
-      const interval = setInterval(() => {
-        console.log('[DEBUG] Periodic refetch triggered - checking for new game');
-        refetch();
-      }, 3000);
-      return () => {
-        console.log('[DEBUG] Clearing periodic refetch interval');
-        clearInterval(interval);
-      };
-    }
-  }, [gameState, refetch]);
-
   const prizePoolFormatted = gameState?.prizePool
     ? formatUnits(gameState.prizePool, 18)
     : "0";
@@ -222,16 +234,12 @@ export default function Home() {
     !isConfirming &&
     (isFreePlayEligible || hasEnoughBalance);
 
-  // Allow claiming if timer expired AND there's actually something to claim
-  // Check: prizePool > 0 OR lastPlayer exists (contract requirement)
-  // Also check that we're not in a state where prize was already claimed (prizePool = 0 AND lastPlayer = 0)
+  // Allow claiming if timer expired - this is needed to start a new game
   const canClaimPrize =
     isConnected &&
     !isWrongChain &&
     gameState?.gameActive &&
     gameState?.timeRemaining === 0n &&
-    (gameState?.prizePool > 0n || (gameState?.lastPlayer && gameState.lastPlayer !== "0x0000000000000000000000000000000000000000")) &&
-    !(gameState?.prizePool === 0n && (!gameState?.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000")) &&
     !isClaiming;
 
   // Debug logging for button states
@@ -271,12 +279,6 @@ export default function Home() {
               <p className="font-inter text-xs font-750 text-white uppercase">
                 ROUND #{gameState.currentRound.toString()}
               </p>
-              {gameState.timeRemaining === 0n && gameState.prizePool === 0n && 
-               (!gameState.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000") && (
-                <p className="font-inter text-xs text-white mt-1 opacity-75">
-                  (Claimed, starting new game...)
-                </p>
-              )}
             </div>
           </motion.div>
         )}
@@ -403,31 +405,30 @@ export default function Home() {
               className="lg:col-span-1 flex flex-col items-center justify-center"
             >
               {/* Timer - Bold block - Compact */}
-              <motion.div
-                key={timeRemaining.toString()}
-                initial={{ scale: 1.05 }}
-                animate={{ scale: 1 }}
+              <div
                 className={`mb-4 border-2 p-3 w-full ${
-                  gameState?.timeRemaining === 0n && canClaimPrize
+                  timeRemaining === 0n && canClaimPrize
                     ? "bg-celo-orange text-black border-black"
                     : "bg-black text-celo-yellow border-celo-yellow"
                 }`}
               >
                 <div className="font-inter text-xs font-750 uppercase tracking-wider mb-1 text-center">
-                  {gameState?.timeRemaining === 0n && canClaimPrize
+                  {timeRemaining === 0n && canClaimPrize
                     ? "⏰ TIMER EXPIRED - CLAIM PRIZE"
                     : "TIME REMAINING"}
                 </div>
-                <div className="font-mono text-2xl md:text-3xl font-bold text-center">
+                <div className="font-mono text-2xl md:text-3xl font-bold text-center min-h-[2.5rem] flex items-center justify-center">
                   {gameStateLoading ? (
-                    <span className="animate-pulse-strong">--:--</span>
-                  ) : gameState?.timeRemaining === 0n ? (
+                    <span>--:--</span>
+                  ) : timeRemaining === 0n ? (
                     "00:00"
                   ) : (
-                    formatTime(timeRemaining)
+                    <span className={Number(timeRemaining) <= 10 ? "animate-pulse-strong text-red-600" : ""}>
+                      {formatTime(timeRemaining)}
+                    </span>
                   )}
                 </div>
-              </motion.div>
+              </div>
 
               {/* Main Button - Central, rounded, with CELO logo - Compact */}
               {canPressButton ? (
@@ -490,13 +491,7 @@ export default function Home() {
               ) : isConnected && !isWrongChain ? (
                 <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-tan-medium border-4 border-black flex items-center justify-center">
                   <span className="font-inter font-bold text-celo-brown text-sm uppercase text-center px-4">
-                    {gameState?.timeRemaining === 0n && 
-                     gameState?.prizePool === 0n && 
-                     (!gameState?.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000")
-                      ? "REFRESHING..."
-                      : gameState?.timeRemaining === 0n 
-                      ? "WAITING FOR CLAIM"
-                      : !isFreePlayEligible && !hasEnoughBalance
+                    {!isFreePlayEligible && !hasEnoughBalance
                       ? "INSUFFICIENT BALANCE"
                       : gameState && gameState.timeRemaining > 0n
                       ? "READY TO PLAY"

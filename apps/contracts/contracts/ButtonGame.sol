@@ -94,17 +94,20 @@ contract ButtonGame is Ownable, ReentrancyGuard {
 
     /**
      * @dev Claim prize when timer expires and automatically start new game
+     * Can be called even if there's nothing to claim (prizePool = 0 and no lastPlayer)
+     * This allows starting a new game when timer expires with no players
      */
     function claimPrize() external nonReentrant {
         require(gameActive, "Game is not active");
         require(block.timestamp >= timerEnd, "Timer has not expired yet");
-        require(prizePool > 0 || lastPlayer != address(0), "No prize to claim");
+        // Removed the require for prizePool/lastPlayer - allow claiming even with nothing to claim
+        // This enables starting a new game when timer expires with no players
 
         uint256 prize = prizePool;
         address winner = lastPlayer;
         uint256 currentRound = gameRound;
 
-        // Record winner
+        // Record winner only if there's actually a winner and prize
         if (winner != address(0) && prize > 0) {
             WinnerInfo memory winnerInfo = WinnerInfo({
                 winner: winner,
@@ -122,7 +125,7 @@ contract ButtonGame is Ownable, ReentrancyGuard {
             emit PrizeWon(winner, prize, currentRound);
         }
 
-        // Start new game automatically
+        // Start new game automatically (even if there was nothing to claim)
         _startNewGame();
     }
 
