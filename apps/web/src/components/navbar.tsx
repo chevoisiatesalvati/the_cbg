@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Menu, ExternalLink } from "lucide-react"
+import { Wallet, Connect, Avatar, Name } from "@composer-kit/ui/wallet"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,7 +22,7 @@ export function Navbar() {
   const pathname = usePathname()
   
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b-2 border-black bg-celo-tan-light backdrop-blur-md supports-[backdrop-filter]:bg-celo-tan-light/60">
       <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4">
         <div className="flex items-center gap-2">
           {/* Mobile menu button */}
@@ -55,7 +56,12 @@ export function Navbar() {
                   </Link>
                 ))}
                 <div className="mt-6 pt-6 border-t">
-                  <Button className="w-full">Connect Wallet</Button>
+                  <Wallet>
+                    <Connect label="Connect Wallet">
+                      <Avatar />
+                      <Name />
+                    </Connect>
+                  </Wallet>
                 </div>
               </nav>
             </SheetContent>
@@ -90,7 +96,12 @@ export function Navbar() {
           ))}
           
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">Connect Wallet</Button>
+            <Wallet>
+              <Connect label="Connect">
+                <Avatar />
+                <Name />
+              </Connect>
+            </Wallet>
           </div>
         </nav>
       </div>

@@ -15,6 +15,22 @@ module.exports = {
     },
     extend: {
       colors: {
+        // Celo Brand Colors
+        celo: {
+          yellow: "#FCFF52",
+          green: "#4E632A",
+          purple: "#1A0329",
+          tan: {
+            light: "#FBF6F1",
+            medium: "#E6E3D5",
+          },
+          brown: "#635949",
+          // Accents
+          pink: "#F2A9E7",
+          orange: "#F29E5F",
+          lime: "#B2EBA1",
+          blue: "#8AC0F9",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -49,6 +65,17 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      fontFamily: {
+        alpina: ["var(--font-alpina)", "serif"],
+        inter: ["var(--font-inter)", "sans-serif"],
+      },
+      fontWeight: {
+        "750": "750",
+      },
+      letterSpacing: {
+        tight: "-0.05em",
+        tighter: "-0.08em",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: 0 },
@@ -58,10 +85,20 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
+        "pulse-strong": {
+          "0%, 100%": { opacity: 1 },
+          "50%": { opacity: 0.7 },
+        },
+        "scale-in": {
+          "0%": { transform: "scale(0.95)", opacity: 0 },
+          "100%": { transform: "scale(1)", opacity: 1 },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "pulse-strong": "pulse-strong 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "scale-in": "scale-in 0.3s ease-out",
       },
     },
   },

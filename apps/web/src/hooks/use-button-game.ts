@@ -133,15 +133,18 @@ export function usePressButton() {
   const { entryFee } = useEntryFee();
   const { isEligible } = useFreePlayEligibility();
 
-  const pressButton = (useFreePlay: boolean = false) => {
+  const pressButton = () => {
+    // Automatically use free play if eligible, otherwise use entry fee
+    const useFreePlay = isEligible ?? false;
+    
     if (!entryFee && !useFreePlay) return;
     
     writeContract({
       address: BUTTON_GAME_ADDRESS,
       abi: BUTTON_GAME_ABI,
       functionName: "pressButton",
-      args: [useFreePlay && isEligible],
-      value: useFreePlay && isEligible ? 0n : entryFee,
+      args: [useFreePlay],
+      value: useFreePlay ? 0n : (entryFee ?? 0n),
     });
   };
 
@@ -160,6 +163,7 @@ export function usePressButton() {
     error,
     gasEstimate,
     isEstimatingGas,
+    isUsingFreePlay: isEligible ?? false,
   };
 }
 

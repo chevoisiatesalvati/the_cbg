@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;750;800;900&display=swap');
+
 @layer base {
   :root {
     --border: 214.3 31.8% 91.4%;
@@ -37,6 +39,9 @@
     --ring: 222.2 84% 4.9%;
 
     --radius: 0.5rem;
+    
+    --font-alpina: 'Georgia', 'Times New Roman', serif;
+    --font-inter: 'Inter', sans-serif;
   }
 
   .dark {
@@ -75,6 +80,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-celo-tan-light text-black font-inter;
+    font-family: var(--font-inter);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-alpina);
+    font-weight: 300;
+    letter-spacing: -0.05em;
   }
 }

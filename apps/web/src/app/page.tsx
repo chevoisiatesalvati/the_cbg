@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
-import { Wallet, Connect, Avatar, Name } from "@composer-kit/ui/wallet";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   useGameState,
   useEntryFee,
@@ -16,6 +16,7 @@ import {
 import { formatUnits } from "viem";
 import { celoSepolia } from "wagmi/chains";
 import { BUTTON_GAME_ADDRESS } from "@/lib/contracts";
+import { CeloLogo } from "@/components/celo-logo";
 
 function formatTime(seconds: bigint | number): string {
   const totalSeconds = typeof seconds === "bigint" ? Number(seconds) : seconds;
@@ -36,7 +37,7 @@ export default function Home() {
   const chainId = useChainId();
   const { gameState, isLoading: gameStateLoading, refetch } = useGameState();
   const { entryFeeFormatted = "0", entryFee } = useEntryFee();
-  const { pressButton, isPending: isPressing, isConfirming, isSuccess: pressSuccess, error: pressError } = usePressButton();
+  const { pressButton, isPending: isPressing, isConfirming, isSuccess: pressSuccess, error: pressError, isUsingFreePlay } = usePressButton();
   const { claimPrize, isPending: isClaiming, error: claimError } = useClaimPrize();
   const { isEligible: isFreePlayEligible, timeUntilFreePlay } = useFreePlayEligibility();
   const { balance, balanceFormatted } = useUserBalance();
@@ -50,17 +51,17 @@ export default function Home() {
   useGameEvents(
     () => {
       refetch();
-      setNotification("🎉 Button pressed! Timer reset.");
+      setNotification("Button pressed! Timer reset.");
       setTimeout(() => setNotification(null), 5000);
     },
     () => {
       refetch();
-      setNotification("🏆 Prize claimed! New game started.");
+      setNotification("Prize claimed! New game started.");
       setTimeout(() => setNotification(null), 5000);
     },
     () => {
       refetch();
-      setNotification("🆕 New game started!");
+      setNotification("New game started!");
       setTimeout(() => setNotification(null), 5000);
     }
   );
@@ -96,6 +97,19 @@ export default function Home() {
     }
   }, [pressSuccess, refetch]);
 
+  // Refetch game state after claim error to sync UI
+  useEffect(() => {
+    if (claimError) {
+      // If error is "No prize to claim", refetch to update state
+      const errorMsg = claimError.message || String(claimError) || "";
+      if (errorMsg.includes("No prize to claim")) {
+        setTimeout(() => {
+          refetch();
+        }, 1000);
+      }
+    }
+  }, [claimError, refetch]);
+
   const prizePoolFormatted = gameState?.prizePool
     ? formatUnits(gameState.prizePool, 18)
     : "0";
@@ -105,284 +119,438 @@ export default function Home() {
     : "0";
 
   const hasEnoughBalance = balance && entryFee ? balance >= entryFee : false;
+  const isWrongChain = chainId !== celoSepolia.id;
 
   const canPressButton =
     isConnected &&
+    !isWrongChain &&
     gameState?.gameActive &&
     gameState?.timeRemaining > 0n &&
     !isPressing &&
-    !isConfirming;
+    !isConfirming &&
+    (isFreePlayEligible || hasEnoughBalance);
 
-  const canPressFree =
-    canPressButton && isFreePlayEligible;
-
-  const canPressPaid =
-    canPressButton && hasEnoughBalance;
-
+  // Allow claiming if timer expired AND there's actually something to claim
+  // Check: prizePool > 0 OR lastPlayer exists (contract requirement)
   const canClaimPrize =
     isConnected &&
+    !isWrongChain &&
     gameState?.gameActive &&
     gameState?.timeRemaining === 0n &&
-    gameState?.prizePool > 0n &&
+    (gameState?.prizePool > 0n || (gameState?.lastPlayer && gameState.lastPlayer !== "0x0000000000000000000000000000000000000000")) &&
     !isClaiming;
 
-  const isWrongChain = chainId !== celoSepolia.id;
-
   return (
-    <main className="flex-1 min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50">
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">
-            🎮 The CBG
-          </h1>
-          <p className="text-lg text-gray-600">
-            The Celo Button Game
-          </p>
-          {gameState && (
-            <p className="text-sm text-gray-500 mt-2">
-              Round #{gameState.currentRound.toString()}
-            </p>
+    <main className="min-h-screen bg-celo-tan-light">
+      <div className="container mx-auto px-4 py-4 md:py-6 max-w-6xl">
+        {/* Header - Bold, architectural typography - Compact */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-4 md:mb-6"
+        >
+          <div className="flex items-baseline justify-between gap-4">
+            <div>
+              <h1 className="font-alpina text-4xl md:text-6xl font-light tracking-tighter text-celo-purple mb-1">
+                THE <span className="italic">CBG</span>
+              </h1>
+              <div className="h-1 w-24 bg-celo-yellow mb-2"></div>
+              <p className="font-inter text-sm md:text-base font-bold text-celo-brown uppercase tracking-wider">
+                The Celo Button Game
+              </p>
+            </div>
+            {gameState && (
+              <div className="bg-celo-green border-2 border-black px-4 py-2">
+                <p className="font-inter text-xs font-750 text-white uppercase">
+                  ROUND #{gameState.currentRound.toString()}
+                </p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Notification - Sharp color block */}
+        <AnimatePresence>
+          {notification && (
+            <motion.div
+              initial={{ opacity: 0, x: -100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 100 }}
+              className="mb-3 p-3 bg-celo-lime border-2 border-black text-black font-inter font-bold text-sm"
+            >
+              {notification}
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
-        {/* Notification */}
-        {notification && (
-          <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-center animate-fade-in">
-            {notification}
-          </div>
-        )}
-
-        {/* Wallet Connection */}
-        <div className="mb-6 flex justify-center [&_button]:bg-blue-600 [&_button]:hover:bg-blue-700 [&_button]:text-white [&_button]:font-semibold [&_button]:px-6 [&_button]:py-3 [&_button]:rounded-lg [&_button]:transition-colors">
-          <Wallet>
-            <Connect label="Connect Wallet">
-              <Avatar />
-              <Name />
-            </Connect>
-          </Wallet>
-        </div>
-
-        {/* Wrong Chain Warning */}
+        {/* Warnings - High contrast blocks - Compact */}
         {isConnected && isWrongChain && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
-            ⚠️ Please switch to Celo Sepolia testnet
-          </div>
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="mb-3 p-3 bg-celo-orange border-2 border-black text-black font-inter font-bold text-sm"
+          >
+            ⚠️ SWITCH TO CELO SEPOLIA TESTNET
+          </motion.div>
         )}
 
-        {/* Contract Not Deployed Warning */}
         {isConnected && !isWrongChain && BUTTON_GAME_ADDRESS === "0x0000000000000000000000000000000000000000" && (
-          <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg text-center">
-            ⚠️ Contracts not deployed. Please set NEXT_PUBLIC_BUTTON_GAME_ADDRESS environment variable.
-          </div>
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="mb-3 p-3 bg-celo-yellow border-2 border-black text-black font-inter font-bold text-sm"
+          >
+            ⚠️ CONTRACTS NOT DEPLOYED
+          </motion.div>
         )}
 
-        {/* Balance Warning */}
         {isConnected && !isWrongChain && !hasEnoughBalance && !isFreePlayEligible && (
-          <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg text-center">
-            ⚠️ Insufficient balance. You need {parseFloat(entryFeeFormatted).toFixed(4)} CELO to play. You have {parseFloat(balanceFormatted).toFixed(4)} CELO.
-          </div>
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="mb-3 p-3 bg-celo-pink border-2 border-black text-black font-inter font-bold text-sm"
+          >
+            INSUFFICIENT BALANCE: {parseFloat(entryFeeFormatted).toFixed(4)} CELO REQUIRED
+          </motion.div>
         )}
 
-        {/* Error Messages */}
+        {/* Error Messages - Compact */}
         {pressError && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
-            ❌ Error: {pressError.message || "Transaction failed"}
-          </div>
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="mb-3 p-3 bg-black text-celo-yellow border-2 border-celo-yellow font-inter font-bold text-sm"
+          >
+            ERROR: {pressError.message || String(pressError) || "Transaction failed"}
+          </motion.div>
         )}
         {claimError && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
-            ❌ Error: {claimError.message || "Claim failed"}
-          </div>
-        )}
-
-        {/* Game Card */}
-        {isConnected && !isWrongChain && (
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 space-y-6">
-            {/* Progressive Jackpot */}
-            {gameState && gameState.progressiveJackpot > 0n && (
-              <div className="text-center p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg">
-                <div className="text-sm text-gray-600 mb-1">Progressive Jackpot</div>
-                <div className="text-2xl font-bold text-purple-600">
-                  {parseFloat(progressiveJackpotFormatted).toFixed(4)} CELO
-                </div>
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="mb-3 p-3 bg-black text-celo-yellow border-2 border-celo-yellow font-inter font-bold text-sm"
+          >
+            ERROR: {claimError.message || String(claimError) || "Claim failed"}
+            {String(claimError).includes("No prize to claim") && (
+              <div className="mt-2 text-xs font-normal">
+                The prize has already been claimed. Refreshing game state...
               </div>
             )}
+          </motion.div>
+        )}
 
-            {/* Prize Pool Display */}
-            <div className="text-center">
-              <div className="text-sm text-gray-600 mb-2">Current Prize Pool</div>
-              <div className="text-4xl md:text-5xl font-bold text-orange-600 mb-1">
-                {gameStateLoading ? (
-                  <span className="animate-pulse">...</span>
-                ) : (
-                  `${parseFloat(prizePoolFormatted).toFixed(4)} CELO`
+        {/* Main Game Area - Asymmetric layout - Compact */}
+        {isConnected && !isWrongChain && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            {/* Left Column - Prize Pool - Compact */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="lg:col-span-1"
+            >
+              <div className="bg-celo-green border-2 border-black p-4 text-white">
+                <div className="font-inter text-xs font-750 uppercase tracking-wider mb-2">
+                  PRIZE POOL
+                </div>
+                <motion.div
+                  key={prizePoolFormatted}
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  className="font-alpina text-3xl md:text-4xl font-light italic mb-1"
+                >
+                  {gameStateLoading ? (
+                    <span className="animate-pulse-strong">...</span>
+                  ) : (
+                    `${parseFloat(prizePoolFormatted).toFixed(4)}`
+                  )}
+                </motion.div>
+                <div className="font-inter text-sm font-bold uppercase">CELO</div>
+                {gameState && gameState.progressiveJackpot > 0n && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-3 pt-3 border-t-2 border-white"
+                  >
+                    <div className="font-inter text-xs font-750 uppercase tracking-wider mb-1">
+                      JACKPOT
+                    </div>
+                    <div className="font-alpina text-xl font-light italic">
+                      {parseFloat(progressiveJackpotFormatted).toFixed(4)} CELO
+                    </div>
+                  </motion.div>
                 )}
               </div>
-              <div className="text-xs text-gray-500">
-                Entry fee: {parseFloat(entryFeeFormatted).toFixed(4)} CELO
-              </div>
-            </div>
+            </motion.div>
 
-            {/* Timer Display */}
-            <div className="text-center">
-              <div className="text-sm text-gray-600 mb-2">Time Remaining</div>
-              <div className="text-3xl md:text-4xl font-mono font-bold text-gray-900">
-                {gameStateLoading ? (
-                  <span className="animate-pulse">--:--</span>
-                ) : (
-                  formatTime(timeRemaining)
-                )}
-              </div>
-              {gameState?.timeRemaining === 0n && gameState?.prizePool > 0n && (
-                <div className="mt-2 text-sm text-orange-600 font-semibold">
-                  ⏰ Timer expired! {gameState.lastPlayer === address ? "You can claim your prize!" : "Last player can claim prize"}
+            {/* Center Column - Main Button - Compact */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+              className="lg:col-span-1 flex flex-col items-center justify-center"
+            >
+              {/* Timer - Bold block - Compact */}
+              <motion.div
+                key={timeRemaining.toString()}
+                initial={{ scale: 1.05 }}
+                animate={{ scale: 1 }}
+                className={`mb-4 border-2 p-3 w-full ${
+                  gameState?.timeRemaining === 0n && canClaimPrize
+                    ? "bg-celo-orange text-black border-black"
+                    : "bg-black text-celo-yellow border-celo-yellow"
+                }`}
+              >
+                <div className="font-inter text-xs font-750 uppercase tracking-wider mb-1 text-center">
+                  {gameState?.timeRemaining === 0n && canClaimPrize
+                    ? "⏰ TIMER EXPIRED - CLAIM PRIZE"
+                    : "TIME REMAINING"}
+                </div>
+                <div className="font-mono text-2xl md:text-3xl font-bold text-center">
+                  {gameStateLoading ? (
+                    <span className="animate-pulse-strong">--:--</span>
+                  ) : gameState?.timeRemaining === 0n ? (
+                    "00:00"
+                  ) : (
+                    formatTime(timeRemaining)
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Main Button - Central, rounded, with CELO logo - Compact */}
+              {canPressButton ? (
+                <motion.button
+                  onClick={pressButton}
+                  disabled={isPressing || isConfirming}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-yellow border-4 border-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] transition-all"
+                >
+                  <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                  >
+                    <CeloLogo size={90} />
+                  </motion.div>
+                  {isPressing || isConfirming ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center"
+                    >
+                      <span className="font-inter font-bold text-white text-sm">PROCESSING...</span>
+                    </motion.div>
+                  ) : null}
+                  {isUsingFreePlay && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-celo-lime border-2 border-black px-3 py-1"
+                    >
+                      <span className="font-inter text-xs font-bold uppercase">FREE PLAY</span>
+                    </motion.div>
+                  )}
+                </motion.button>
+              ) : canClaimPrize ? (
+                <motion.button
+                  onClick={claimPrize}
+                  disabled={isClaiming}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-green border-4 border-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] transition-all"
+                >
+                  <span className="font-inter font-bold text-white text-lg uppercase text-center px-4">
+                    {isClaiming ? "CLAIMING..." : "CLAIM PRIZE"}
+                  </span>
+                </motion.button>
+              ) : isConnected && !isWrongChain && gameState && !gameState.gameActive ? (
+                <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-tan-medium border-4 border-black flex items-center justify-center">
+                  <span className="font-inter font-bold text-celo-brown text-sm uppercase text-center px-4">
+                    GAME INACTIVE
+                  </span>
+                </div>
+              ) : isConnected && !isWrongChain && gameStateLoading ? (
+                <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-tan-medium border-4 border-black flex items-center justify-center">
+                  <span className="font-inter font-bold text-celo-brown text-sm uppercase">
+                    LOADING...
+                  </span>
+                </div>
+              ) : isConnected && !isWrongChain ? (
+                <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-tan-medium border-4 border-black flex items-center justify-center">
+                  <span className="font-inter font-bold text-celo-brown text-sm uppercase text-center px-4">
+                    {gameState?.timeRemaining === 0n 
+                      ? "WAITING FOR CLAIM"
+                      : !isFreePlayEligible && !hasEnoughBalance
+                      ? "INSUFFICIENT BALANCE"
+                      : "CONNECT WALLET"}
+                  </span>
+                </div>
+              ) : null}
+
+              {/* Free Play Countdown - Compact */}
+              {!isFreePlayEligible && timeUntilFreePlay !== null && timeUntilFreePlay > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-3 text-center"
+                >
+                  <div className="font-inter text-xs font-750 uppercase text-celo-brown">
+                    NEXT FREE: {formatTime(timeUntilFreePlay)}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Last Player Info - Compact */}
+              {gameState?.lastPlayer && gameState.lastPlayer !== "0x0000000000000000000000000000000000000000" && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-3 text-center"
+                >
+                  <div className="font-inter text-xs font-750 uppercase text-celo-brown mb-1">
+                    LAST PLAYER
+                  </div>
+                  <div className="font-mono text-xs">
+                    {gameState.lastPlayer.slice(0, 6)}...{gameState.lastPlayer.slice(-4)}
+                    {gameState.lastPlayer === address && (
+                      <span className="ml-2 text-celo-green font-bold">(YOU)</span>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Game Inactive - Compact */}
+              {gameState && !gameState.gameActive && (
+                <div className="mt-4 p-3 bg-celo-tan-medium border-2 border-black text-center">
+                  <div className="font-inter font-bold text-celo-brown uppercase text-sm">
+                    GAME INACTIVE
+                  </div>
                 </div>
               )}
-            </div>
+            </motion.div>
 
-            {/* Last Player */}
-            {gameState?.lastPlayer && gameState.lastPlayer !== "0x0000000000000000000000000000000000000000" && (
-              <div className="text-center text-sm text-gray-600">
-                Last player: {gameState.lastPlayer.slice(0, 6)}...{gameState.lastPlayer.slice(-4)}
-                {gameState.lastPlayer === address && (
-                  <span className="ml-2 text-green-600 font-semibold">(You!)</span>
-                )}
+            {/* Right Column - Stats - Compact */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="lg:col-span-1 space-y-3"
+            >
+              <div className="bg-white border-2 border-black p-3">
+                <div className="font-inter text-xs font-750 uppercase tracking-wider mb-2 text-celo-brown">
+                  ENTRY FEE
+                </div>
+                <div className="font-alpina text-2xl font-light italic text-celo-purple">
+                  {parseFloat(entryFeeFormatted).toFixed(4)} CELO
+                </div>
               </div>
-            )}
 
-            {/* Free Play Button */}
-            {canPressFree && (
-              <button
-                onClick={() => pressButton(true)}
-                disabled={isPressing || isConfirming}
-                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors disabled:cursor-not-allowed"
-              >
-                {isPressing || isConfirming ? "Processing..." : "🎁 FREE PLAY (1 per day)"}
-              </button>
-            )}
+              {isConnected && (
+                <div className="bg-celo-purple border-2 border-black p-3 text-white">
+                  <div className="font-inter text-xs font-750 uppercase tracking-wider mb-2">
+                    YOUR BALANCE
+                  </div>
+                  <div className="font-alpina text-2xl font-light italic">
+                    {parseFloat(balanceFormatted).toFixed(4)} CELO
+                  </div>
+                </div>
+              )}
 
-            {/* Free Play Info */}
-            {!isFreePlayEligible && timeUntilFreePlay !== null && timeUntilFreePlay > 0 && (
-              <div className="text-center text-sm text-gray-500">
-                Next free play in: {formatTime(timeUntilFreePlay)}
-              </div>
-            )}
-
-            {/* Press Button (Paid) */}
-            {canPressPaid && (
-              <button
-                onClick={() => pressButton(false)}
-                disabled={isPressing || isConfirming}
-                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold py-6 px-8 rounded-xl text-2xl md:text-3xl transition-all transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed shadow-lg disabled:shadow-none"
-              >
-                {isPressing || isConfirming
-                  ? "Processing..."
-                  : gameState?.timeRemaining === 0n
-                  ? "Timer Expired"
-                  : "🎯 PRESS BUTTON"}
-              </button>
-            )}
-
-            {/* Claim Prize Button */}
-            {canClaimPrize && (
-              <button
-                onClick={() => claimPrize()}
-                disabled={isClaiming}
-                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors disabled:cursor-not-allowed"
-              >
-                {isClaiming ? "Claiming..." : "🏆 Claim Prize"}
-              </button>
-            )}
-
-            {/* Loading State */}
-            {gameStateLoading && (
-              <div className="text-center text-gray-500">
-                Loading game state...
-              </div>
-            )}
-
-            {/* Game Inactive */}
-            {gameState && !gameState.gameActive && (
-              <div className="text-center p-4 bg-gray-100 rounded-lg text-gray-600">
-                Game is currently inactive
-              </div>
-            )}
-
-            {/* Winners Toggle */}
-            <div className="text-center">
+              {/* Winners Toggle - Compact */}
               <button
                 onClick={() => setShowWinners(!showWinners)}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
+                className="w-full bg-celo-blue border-2 border-black p-2 text-black font-inter font-bold uppercase text-sm hover:bg-black hover:text-celo-blue transition-colors"
               >
-                {showWinners ? "Hide" : "Show"} Winner History
+                {showWinners ? "HIDE" : "SHOW"} WINNERS
               </button>
-            </div>
 
-            {/* Winners List */}
-            {showWinners && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold mb-3">Recent Winners</h3>
-                {winnersLoading ? (
-                  <div className="text-center text-gray-500">Loading...</div>
-                ) : winners && winners.length > 0 ? (
-                  <div className="space-y-2">
-                    {winners.map((winner, idx) => (
-                      <div key={idx} className="flex justify-between items-center p-2 bg-white rounded">
-                        <div>
-                          <div className="font-medium">
-                            Round #{winner.round.toString()}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {winner.winner.slice(0, 6)}...{winner.winner.slice(-4)}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-green-600">
-                            {parseFloat(formatUnits(winner.prize, 18)).toFixed(4)} CELO
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {new Date(Number(winner.timestamp) * 1000).toLocaleDateString()}
-                          </div>
-                        </div>
+              {/* Winners List - Compact */}
+              <AnimatePresence>
+                {showWinners && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-white border-2 border-black p-3 overflow-hidden max-h-96 overflow-y-auto"
+                  >
+                    <div className="font-inter text-xs font-750 uppercase tracking-wider mb-3 text-celo-brown">
+                      RECENT WINNERS
+                    </div>
+                    {winnersLoading ? (
+                      <div className="text-center font-inter text-celo-brown text-xs">LOADING...</div>
+                    ) : winners && winners.length > 0 ? (
+                      <div className="space-y-2">
+                        {winners.map((winner, idx) => (
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="border-2 border-black p-2"
+                          >
+                            <div className="font-inter text-xs font-bold uppercase text-celo-green mb-1">
+                              ROUND #{winner.round.toString()}
+                            </div>
+                            <div className="font-mono text-xs mb-1">
+                              {winner.winner.slice(0, 6)}...{winner.winner.slice(-4)}
+                            </div>
+                            <div className="font-alpina text-base font-light italic text-celo-purple">
+                              {parseFloat(formatUnits(winner.prize, 18)).toFixed(4)} CELO
+                            </div>
+                            <div className="font-inter text-xs text-celo-brown mt-1">
+                              {new Date(Number(winner.timestamp) * 1000).toLocaleDateString()}
+                            </div>
+                          </motion.div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500">No winners yet</div>
+                    ) : (
+                      <div className="text-center font-inter text-celo-brown text-xs">NO WINNERS YET</div>
+                    )}
+                  </motion.div>
                 )}
-              </div>
-            )}
+              </AnimatePresence>
+            </motion.div>
           </div>
         )}
 
-        {/* Instructions */}
+        {/* Instructions - Structural poster-like layout */}
         {!isConnected && (
-          <div className="mt-8 bg-white rounded-xl shadow-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">How to Play</h2>
-            <div className="space-y-3 text-left text-gray-600">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">1️⃣</span>
-                <p>Connect your wallet using the button above</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">2️⃣</span>
-                <p>Get 1 free play every 24 hours, or pay {parseFloat(entryFeeFormatted).toFixed(4)} CELO to play</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">3️⃣</span>
-                <p>Press the button to reset the timer and add CELO to the prize pool</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">4️⃣</span>
-                <p>If you&apos;re the last player when the timer hits zero, claim your prize!</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">5️⃣</span>
-                <p>New games start automatically with an initial prize pool</p>
-              </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-16 bg-white border-4 border-black p-12"
+          >
+            <h2 className="font-alpina text-5xl font-light italic text-celo-purple mb-8 tracking-tighter">
+              HOW TO <span className="not-italic">PLAY</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {[
+                { num: "01", text: "Connect your wallet" },
+                { num: "02", text: `Get 1 free play every 24 hours, or pay ${parseFloat(entryFeeFormatted).toFixed(4)} CELO` },
+                { num: "03", text: "Press the button to reset the timer" },
+                { num: "04", text: "If you're last when timer hits zero, claim your prize" },
+              ].map((item, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.7 + idx * 0.1 }}
+                  className="flex gap-4"
+                >
+                  <div className="bg-celo-yellow border-2 border-black p-4 w-16 h-16 flex items-center justify-center">
+                    <span className="font-inter font-bold text-lg">{item.num}</span>
+                  </div>
+                  <div className="flex-1 pt-4">
+                    <p className="font-inter font-750 text-celo-brown uppercase text-sm leading-tight">
+                      {item.text}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
     </main>
