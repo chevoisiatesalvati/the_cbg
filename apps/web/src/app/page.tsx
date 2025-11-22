@@ -259,38 +259,27 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-celo-tan-light">
       <div className="container mx-auto px-4 py-4 md:py-6 max-w-6xl">
-        {/* Header - Bold, architectural typography - Compact */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-4 md:mb-6"
-        >
-          <div className="flex items-baseline justify-between gap-4">
-            <div>
-              <h1 className="font-alpina text-4xl md:text-6xl font-light tracking-tighter text-celo-purple mb-1">
-                THE <span className="italic">CBG</span>
-              </h1>
-              <div className="h-1 w-24 bg-celo-yellow mb-2"></div>
-              <p className="font-inter text-sm md:text-base font-bold text-celo-brown uppercase tracking-wider">
-                The Celo Button Game
+        {/* Round indicator */}
+        {gameState && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-4 md:mb-6 flex justify-start"
+          >
+            <div className="bg-celo-green border-2 border-black px-4 py-2">
+              <p className="font-inter text-xs font-750 text-white uppercase">
+                ROUND #{gameState.currentRound.toString()}
               </p>
-            </div>
-            {gameState && (
-              <div className="bg-celo-green border-2 border-black px-4 py-2">
-                <p className="font-inter text-xs font-750 text-white uppercase">
-                  ROUND #{gameState.currentRound.toString()}
+              {gameState.timeRemaining === 0n && gameState.prizePool === 0n && 
+               (!gameState.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000") && (
+                <p className="font-inter text-xs text-white mt-1 opacity-75">
+                  (Claimed, starting new game...)
                 </p>
-                {gameState.timeRemaining === 0n && gameState.prizePool === 0n && 
-                 (!gameState.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000") && (
-                  <p className="font-inter text-xs text-white mt-1 opacity-75">
-                    (Claimed, starting new game...)
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
 
         {/* Notification - Sharp color block */}
         <AnimatePresence>

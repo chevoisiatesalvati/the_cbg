@@ -1,17 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Menu, ExternalLink } from "lucide-react"
+import { ExternalLink } from "lucide-react"
 import { Wallet, Connect, Avatar, Name } from "@composer-kit/ui/wallet"
-
-import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet"
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -25,46 +17,11 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b-2 border-black bg-celo-tan-light backdrop-blur-md supports-[backdrop-filter]:bg-celo-tan-light/60">
       <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          {/* Mobile menu button */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80">
-              <div className="flex items-center gap-2 mb-8">
-
-                <span className="font-bold text-lg">
-                  the_cbg
-                </span>
-              </div>
-              <nav className="flex flex-col gap-4">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    target={link.external ? "_blank" : undefined}
-                    rel={link.external ? "noopener noreferrer" : undefined}
-                    className={`flex items-center gap-2 text-base font-medium transition-colors hover:text-primary ${
-                      pathname === link.href ? "text-foreground" : "text-foreground/70"
-                    }`}
-                  >
-                    {link.name}
-                    {link.external && <ExternalLink className="h-4 w-4" />}
-                  </Link>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
-
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-
-            <span className="hidden font-bold text-xl sm:inline-block">
-              The CBG
-            </span>
+          {/* Title */}
+          <Link href="/" className="hover:opacity-80 transition-opacity">
+            <h1 className="font-alpina text-2xl md:text-3xl font-light tracking-tighter text-celo-purple">
+              THE <span className="italic border-b-2 border-celo-yellow">CBG</span>
+            </h1>
           </Link>
         </div>
         
