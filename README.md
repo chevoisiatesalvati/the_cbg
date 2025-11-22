@@ -1,8 +1,29 @@
 # the_cbg
 
-The Celo Button Game is a fun and simple game that will let the latest one who
+**The Celo Button Game** - A decentralized timing-based game where players compete to be the last one to press a button before the timer expires, with the winner claiming the prize pool.
 
 A modern Celo blockchain application built with Next.js, TypeScript, and Turborepo.
+
+## About
+
+The Celo Button Game is a smart contract-based game deployed on the Celo blockchain. Players pay an entry fee (or use free play) to press a button that resets a countdown timer. The last player to press the button before the timer expires wins the accumulated prize pool. The game features automatic prize distribution, free play eligibility for new users, and progressive jackpot mechanics.
+
+## Celo Integration
+
+This project integrates with Celo through:
+
+- **Native CELO Token**: The game uses CELO as the native currency for entry fees and prize pools, leveraging Celo's low transaction fees and fast finality
+- **Celo Composer Kit**: Built using Celo's Composer Kit for seamless wallet integration and UI components
+- **Multi-Network Support**: Deployed and verified on Celo Mainnet and Celo Sepolia testnet using Hardhat with CeloScan API verification
+- **Smart Contract Deployment**: Deployed using Hardhat Ignition
+
+The integration leverages Celo's mobile-first approach and low gas fees to create an accessible, engaging gaming experience on-chain.
+
+## Team
+
+**Andrea Salvemini** - Developer
+- Telegram: [@MrSaulman](https://t.me/MrSaulman)
+- X (Twitter): [@Saul2078](https://x.com/Saul2078)
 
 ## Getting Started
 

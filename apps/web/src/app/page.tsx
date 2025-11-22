@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-toastify";
 import {
   useGameState,
   useEntryFee,
@@ -110,7 +111,6 @@ export default function Home() {
   const { winners, isLoading: winnersLoading } = useWinners(10);
 
   const [timeRemaining, setTimeRemaining] = useState<bigint>(0n);
-  const [notification, setNotification] = useState<string | null>(null);
   const [showWinners, setShowWinners] = useState(false);
   const [lastKnownRound, setLastKnownRound] = useState<bigint | null>(null);
 
@@ -118,18 +118,15 @@ export default function Home() {
   useGameEvents(
     () => {
       refetch();
-      setNotification("Button pressed! Timer reset.");
-      setTimeout(() => setNotification(null), 5000);
+      toast.success("Button pressed! Timer reset.");
     },
     () => {
       refetch();
-      setNotification("Prize claimed! New game started.");
-      setTimeout(() => setNotification(null), 5000);
+      toast.success("Prize claimed! New game started.");
     },
     () => {
       refetch();
-      setNotification("New game started!");
-      setTimeout(() => setNotification(null), 5000);
+      toast.success("New game started!");
     }
   );
 
@@ -164,6 +161,14 @@ export default function Home() {
     }
   }, [pressSuccess, refetch]);
 
+  // Show error toast for press errors
+  useEffect(() => {
+    if (pressError) {
+      const errorMsg = pressError.message || String(pressError) || "Transaction failed";
+      toast.error(`ERROR: ${errorMsg}`);
+    }
+  }, [pressError]);
+
   // Refetch game state after successful claim to show new game
   useEffect(() => {
     if (claimSuccess) {
@@ -181,6 +186,9 @@ export default function Home() {
     if (claimError) {
       const errorMsg = claimError.message || String(claimError) || "";
       console.log('[DEBUG] Claim error:', errorMsg);
+      toast.error(errorMsg.includes("No prize to claim") 
+        ? "The prize has already been claimed. Refreshing game state..."
+        : `ERROR: ${errorMsg || "Claim failed"}`);
       // If error is "No prize to claim", refetch to update state
       if (errorMsg.includes("No prize to claim")) {
         console.log('[DEBUG] No prize to claim - refetching in 1 second');
@@ -283,20 +291,6 @@ export default function Home() {
           </motion.div>
         )}
 
-        {/* Notification - Sharp color block */}
-        <AnimatePresence>
-          {notification && (
-            <motion.div
-              initial={{ opacity: 0, x: -100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 100 }}
-              className="mb-3 p-3 bg-celo-lime border-2 border-black text-black font-inter font-bold text-sm"
-            >
-              {notification}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Warnings - High contrast blocks - Compact */}
         {isConnected && isWrongChain && (
           <motion.div
@@ -325,31 +319,6 @@ export default function Home() {
             className="mb-3 p-3 bg-celo-pink border-2 border-black text-black font-inter font-bold text-sm"
           >
             INSUFFICIENT BALANCE: {parseFloat(entryFeeFormatted).toFixed(4)} CELO REQUIRED
-          </motion.div>
-        )}
-
-        {/* Error Messages - Compact */}
-        {pressError && (
-          <motion.div
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            className="mb-3 p-3 bg-black text-celo-yellow border-2 border-celo-yellow font-inter font-bold text-sm"
-          >
-            ERROR: {pressError.message || String(pressError) || "Transaction failed"}
-          </motion.div>
-        )}
-        {claimError && (
-          <motion.div
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            className="mb-3 p-3 bg-black text-celo-yellow border-2 border-celo-yellow font-inter font-bold text-sm"
-          >
-            ERROR: {claimError.message || String(claimError) || "Claim failed"}
-            {String(claimError).includes("No prize to claim") && (
-              <div className="mt-2 text-xs font-normal">
-                The prize has already been claimed. Refreshing game state...
-              </div>
-            )}
           </motion.div>
         )}
 
