@@ -11,12 +11,26 @@ A modern Celo blockchain application built with Next.js, TypeScript, and Turbore
    pnpm install
    ```
 
-2. Start the development server:
+2. Set up environment variables (see [SETUP.md](./SETUP.md) for details):
+   - Frontend: Copy `apps/web/.env.example` to `apps/web/.env.local`
+   - Contracts: Copy `apps/contracts/.env.example` to `apps/contracts/.env`
+
+3. Deploy contracts (see [SETUP.md](./SETUP.md)):
+   ```bash
+   cd apps/contracts
+   pnpm deploy:alfajores
+   ```
+
+4. Update frontend `.env.local` with deployed contract addresses
+
+5. Start the development server:
    ```bash
    pnpm dev
    ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+> **📖 For detailed setup instructions, see [SETUP.md](./SETUP.md)**
 
 ## Project Structure
 
@@ -51,9 +65,15 @@ This is a monorepo managed by Turborepo with the following structure:
 - **Monorepo**: Turborepo
 - **Package Manager**: PNPM
 
+## Documentation
+
+- [Complete Setup Guide](./SETUP.md) - Environment variables, deployment, and configuration
+- [Farcaster Setup](./FARCASTER_SETUP.md) - Farcaster mini app integration
+- [Contract Deployment](./apps/contracts/README.md) - Smart contract deployment guide
+
 ## Learn More
 
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Celo Documentation](https://docs.celo.org/)
 - [Turborepo Documentation](https://turbo.build/repo/docs)
-- [shadcn/ui Documentation](https://ui.shadcn.com/)
+- [Composer Kit Documentation](https://docs.celo.org/composer-kit)

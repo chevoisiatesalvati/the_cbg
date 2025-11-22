@@ -71,17 +71,43 @@ pnpm deploy:celo
 
 ```
 contracts/          # Smart contract source files
-├── Lock.sol        # Sample timelock contract
+├── ButtonGame.sol  # Main game contract
+├── CBGToken.sol    # ERC-20 token contract
 
 test/              # Contract tests
 ├── Lock.ts        # Tests for Lock contract
 
 ignition/          # Deployment scripts
 └── modules/
-    └── Lock.ts    # Lock contract deployment
+    └── ButtonGame.ts    # ButtonGame contract deployment
 
 hardhat.config.ts  # Hardhat configuration
 tsconfig.json      # TypeScript configuration
+```
+
+## 🎮 ButtonGame Deployment
+
+The ButtonGame module deploys both the CBGToken (ERC-20) and ButtonGame contracts.
+
+### Deployment Parameters
+
+- `initialTimerDuration`: Timer duration in seconds (default: 300 = 5 minutes)
+- `initialEntryFee`: Entry fee in token units with 18 decimals (default: "1000000000000000000" = 1 token)
+
+### Example Deployment
+
+```bash
+# Deploy to Alfajores with custom parameters
+hardhat ignition deploy ignition/modules/ButtonGame.ts \
+  --network alfajores \
+  --parameters '{"ButtonGameModule":{"initialTimerDuration":600,"initialEntryFee":"2000000000000000000"}}'
+```
+
+After deployment, update your frontend `.env` file with the deployed addresses:
+
+```env
+NEXT_PUBLIC_BUTTON_GAME_ADDRESS=0x...
+NEXT_PUBLIC_CBG_TOKEN_ADDRESS=0x...
 ```
 
 ## 🔐 Security Notes
