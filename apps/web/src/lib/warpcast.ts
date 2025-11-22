@@ -52,7 +52,7 @@ export async function getFarcasterManifest() {
       splashBackgroundColor: "#FFFFFF",
       webhookUrl: `${appUrl}/api/webhook`,
       // Metadata https://github.com/farcasterxyz/miniapps/discussions/191
-      subtitle: "The Celo Button Game is a fun and simple game that will let the latest one who", // 30 characters, no emojis or special characters, short description under app name
+      subtitle: "Press the button and win!", // 30 characters max
       description: "The Celo Button Game is a fun and simple game that will let the latest one who", // 170 characters, no emojis or special characters, promotional message displayed on Mini App Page
       primaryCategory: "social",
       tags: ["mini-app", "celo"], // up to 5 tags, filtering/search tags

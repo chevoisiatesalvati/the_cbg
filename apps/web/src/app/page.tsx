@@ -33,12 +33,28 @@ function formatTime(seconds: bigint | number): string {
 }
 
 export default function Home() {
+  // DEBUG: All console.log statements are prefixed with [DEBUG] for easy filtering
+  console.log('[DEBUG] Component render - checking game state');
+  
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { gameState, isLoading: gameStateLoading, refetch } = useGameState();
+  
+  // Debug game state changes
+  useEffect(() => {
+    if (gameState) {
+      console.log('[DEBUG] Game state updated:', {
+        round: gameState.currentRound.toString(),
+        timeRemaining: gameState.timeRemaining.toString(),
+        prizePool: gameState.prizePool.toString(),
+        lastPlayer: gameState.lastPlayer,
+        gameActive: gameState.gameActive,
+      });
+    }
+  }, [gameState]);
   const { entryFeeFormatted = "0", entryFee } = useEntryFee();
   const { pressButton, isPending: isPressing, isConfirming, isSuccess: pressSuccess, error: pressError, isUsingFreePlay } = usePressButton();
-  const { claimPrize, isPending: isClaiming, error: claimError } = useClaimPrize();
+  const { claimPrize, isPending: isClaiming, isSuccess: claimSuccess, error: claimError } = useClaimPrize();
   const { isEligible: isFreePlayEligible, timeUntilFreePlay } = useFreePlayEligibility();
   const { balance, balanceFormatted } = useUserBalance();
   const { winners, isLoading: winnersLoading } = useWinners(10);
@@ -46,6 +62,7 @@ export default function Home() {
   const [timeRemaining, setTimeRemaining] = useState<bigint>(0n);
   const [notification, setNotification] = useState<string | null>(null);
   const [showWinners, setShowWinners] = useState(false);
+  const [lastKnownRound, setLastKnownRound] = useState<bigint | null>(null);
 
   // Event listeners - refetch on events
   useGameEvents(
@@ -68,10 +85,15 @@ export default function Home() {
 
   // Update time remaining when game state changes
   useEffect(() => {
-    if (gameState?.timeRemaining) {
+    if (gameState?.timeRemaining !== undefined) {
+      console.log('[DEBUG] Time remaining updated:', {
+        old: timeRemaining.toString(),
+        new: gameState.timeRemaining.toString(),
+        round: gameState.currentRound.toString(),
+      });
       setTimeRemaining(gameState.timeRemaining);
     }
-  }, [gameState?.timeRemaining]);
+  }, [gameState?.timeRemaining, gameState?.currentRound, timeRemaining]);
 
   // Client-side countdown
   useEffect(() => {
@@ -97,18 +119,88 @@ export default function Home() {
     }
   }, [pressSuccess, refetch]);
 
+  // Refetch game state after successful claim to show new game
+  useEffect(() => {
+    if (claimSuccess) {
+      console.log('[DEBUG] Claim successful! Refetching game state in 2 seconds...');
+      // Wait for transaction to be confirmed, then refetch
+      setTimeout(() => {
+        console.log('[DEBUG] Refetching after successful claim');
+        refetch();
+      }, 2000);
+    }
+  }, [claimSuccess, refetch]);
+
   // Refetch game state after claim error to sync UI
   useEffect(() => {
     if (claimError) {
-      // If error is "No prize to claim", refetch to update state
       const errorMsg = claimError.message || String(claimError) || "";
+      console.log('[DEBUG] Claim error:', errorMsg);
+      // If error is "No prize to claim", refetch to update state
       if (errorMsg.includes("No prize to claim")) {
+        console.log('[DEBUG] No prize to claim - refetching in 1 second');
         setTimeout(() => {
           refetch();
         }, 1000);
       }
     }
   }, [claimError, refetch]);
+
+  // Track round changes to detect when new game starts
+  useEffect(() => {
+    if (gameState?.currentRound) {
+      console.log('[DEBUG] Round tracking:', {
+        currentRound: gameState.currentRound.toString(),
+        lastKnownRound: lastKnownRound?.toString() || 'null',
+        timeRemaining: gameState.timeRemaining.toString(),
+        prizePool: gameState.prizePool.toString(),
+        lastPlayer: gameState.lastPlayer,
+      });
+      
+      if (lastKnownRound === null) {
+        console.log('[DEBUG] Setting initial round:', gameState.currentRound.toString());
+        setLastKnownRound(gameState.currentRound);
+      } else if (gameState.currentRound > lastKnownRound) {
+        // Round increased, new game started
+        console.log('[DEBUG] Round increased! New game started. Old:', lastKnownRound.toString(), 'New:', gameState.currentRound.toString());
+        setLastKnownRound(gameState.currentRound);
+        refetch();
+      }
+    }
+  }, [gameState?.currentRound, lastKnownRound, refetch]);
+
+  // Detect when prize was already claimed but new game hasn't started yet
+  // This happens when timer = 0, prizePool = 0, lastPlayer = 0
+  // In this case, we need to wait for the new game to start (timeRemaining > 0)
+  // If it stays in this state, refetch periodically
+  useEffect(() => {
+    if (
+      gameState &&
+      gameState.timeRemaining === 0n &&
+      gameState.prizePool === 0n &&
+      (!gameState.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000") &&
+      gameState.gameActive
+    ) {
+      console.log('[DEBUG] Prize claimed state detected - starting periodic refetch', {
+        round: gameState.currentRound.toString(),
+        timeRemaining: gameState.timeRemaining.toString(),
+        prizePool: gameState.prizePool.toString(),
+        lastPlayer: gameState.lastPlayer,
+        gameActive: gameState.gameActive,
+      });
+      
+      // Prize was claimed, but new game timer hasn't started yet
+      // Refetch every 3 seconds until new game starts
+      const interval = setInterval(() => {
+        console.log('[DEBUG] Periodic refetch triggered - checking for new game');
+        refetch();
+      }, 3000);
+      return () => {
+        console.log('[DEBUG] Clearing periodic refetch interval');
+        clearInterval(interval);
+      };
+    }
+  }, [gameState, refetch]);
 
   const prizePoolFormatted = gameState?.prizePool
     ? formatUnits(gameState.prizePool, 18)
@@ -132,13 +224,37 @@ export default function Home() {
 
   // Allow claiming if timer expired AND there's actually something to claim
   // Check: prizePool > 0 OR lastPlayer exists (contract requirement)
+  // Also check that we're not in a state where prize was already claimed (prizePool = 0 AND lastPlayer = 0)
   const canClaimPrize =
     isConnected &&
     !isWrongChain &&
     gameState?.gameActive &&
     gameState?.timeRemaining === 0n &&
     (gameState?.prizePool > 0n || (gameState?.lastPlayer && gameState.lastPlayer !== "0x0000000000000000000000000000000000000000")) &&
+    !(gameState?.prizePool === 0n && (!gameState?.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000")) &&
     !isClaiming;
+
+  // Debug logging for button states
+  useEffect(() => {
+    if (gameState) {
+      console.log('[DEBUG] Button state check:', {
+        isConnected,
+        isWrongChain,
+        gameActive: gameState.gameActive,
+        timeRemaining: gameState.timeRemaining.toString(),
+        prizePool: gameState.prizePool.toString(),
+        lastPlayer: gameState.lastPlayer,
+        currentRound: gameState.currentRound.toString(),
+        canPressButton,
+        canClaimPrize,
+        isFreePlayEligible,
+        hasEnoughBalance,
+        isPressing,
+        isConfirming,
+        isClaiming,
+      });
+    }
+  }, [gameState, isConnected, isWrongChain, canPressButton, canClaimPrize, isFreePlayEligible, hasEnoughBalance, isPressing, isConfirming, isClaiming]);
 
   return (
     <main className="min-h-screen bg-celo-tan-light">
@@ -165,6 +281,12 @@ export default function Home() {
                 <p className="font-inter text-xs font-750 text-white uppercase">
                   ROUND #{gameState.currentRound.toString()}
                 </p>
+                {gameState.timeRemaining === 0n && gameState.prizePool === 0n && 
+                 (!gameState.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000") && (
+                  <p className="font-inter text-xs text-white mt-1 opacity-75">
+                    (Claimed, starting new game...)
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -379,10 +501,16 @@ export default function Home() {
               ) : isConnected && !isWrongChain ? (
                 <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-tan-medium border-4 border-black flex items-center justify-center">
                   <span className="font-inter font-bold text-celo-brown text-sm uppercase text-center px-4">
-                    {gameState?.timeRemaining === 0n 
+                    {gameState?.timeRemaining === 0n && 
+                     gameState?.prizePool === 0n && 
+                     (!gameState?.lastPlayer || gameState.lastPlayer === "0x0000000000000000000000000000000000000000")
+                      ? "REFRESHING..."
+                      : gameState?.timeRemaining === 0n 
                       ? "WAITING FOR CLAIM"
                       : !isFreePlayEligible && !hasEnoughBalance
                       ? "INSUFFICIENT BALANCE"
+                      : gameState && gameState.timeRemaining > 0n
+                      ? "READY TO PLAY"
                       : "CONNECT WALLET"}
                   </span>
                 </div>

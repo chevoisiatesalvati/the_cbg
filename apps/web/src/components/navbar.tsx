@@ -55,14 +55,6 @@ export function Navbar() {
                     {link.external && <ExternalLink className="h-4 w-4" />}
                   </Link>
                 ))}
-                <div className="mt-6 pt-6 border-t">
-                  <Wallet>
-                    <Connect label="Connect Wallet">
-                      <Avatar />
-                      <Name />
-                    </Connect>
-                  </Wallet>
-                </div>
               </nav>
             </SheetContent>
           </Sheet>
@@ -71,7 +63,7 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
 
             <span className="hidden font-bold text-xl sm:inline-block">
-              the_cbg
+              The CBG
             </span>
           </Link>
         </div>
@@ -94,16 +86,17 @@ export function Navbar() {
               {link.external && <ExternalLink className="h-4 w-4" />}
             </Link>
           ))}
-          
-          <div className="flex items-center gap-3">
-            <Wallet>
-              <Connect label="Connect">
-                <Avatar />
-                <Name />
-              </Connect>
-            </Wallet>
-          </div>
         </nav>
+        
+        {/* Connect button */}
+        <div className="flex items-center gap-3">
+          <Wallet>
+            <Connect label="Connect">
+              <Avatar />
+              <Name />
+            </Connect>
+          </Wallet>
+        </div>
       </div>
     </header>
   )
