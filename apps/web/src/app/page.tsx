@@ -8,13 +8,17 @@ import {
   useEntryFee,
   usePressButton,
   useClaimPrize,
+  useFreePlayEligibility,
+  useUserBalance,
+  useWinners,
+  useGameEvents,
 } from "@/hooks/use-button-game";
 import { formatUnits } from "viem";
 import { celoSepolia } from "wagmi/chains";
 import { BUTTON_GAME_ADDRESS } from "@/lib/contracts";
 
-function formatTime(seconds: bigint): string {
-  const totalSeconds = Number(seconds);
+function formatTime(seconds: bigint | number): string {
+  const totalSeconds = typeof seconds === "bigint" ? Number(seconds) : seconds;
   if (totalSeconds <= 0) return "00:00";
   
   const hours = Math.floor(totalSeconds / 3600);
@@ -31,33 +35,35 @@ export default function Home() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { gameState, isLoading: gameStateLoading, refetch } = useGameState();
-  const { entryFeeFormatted = "0" } = useEntryFee();
-  const { pressButton, isPending: isPressing, isConfirming, isSuccess: pressSuccess } = usePressButton();
-  const { claimPrize, isPending: isClaiming } = useClaimPrize();
+  const { entryFeeFormatted = "0", entryFee } = useEntryFee();
+  const { pressButton, isPending: isPressing, isConfirming, isSuccess: pressSuccess, error: pressError } = usePressButton();
+  const { claimPrize, isPending: isClaiming, error: claimError } = useClaimPrize();
+  const { isEligible: isFreePlayEligible, timeUntilFreePlay } = useFreePlayEligibility();
+  const { balance, balanceFormatted } = useUserBalance();
+  const { winners, isLoading: winnersLoading } = useWinners(10);
 
   const [timeRemaining, setTimeRemaining] = useState<bigint>(0n);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [showWinners, setShowWinners] = useState(false);
 
-  // Poll game state every second
-  useEffect(() => {
-    if (!gameState) return;
-
-    const interval = setInterval(() => {
-      if (gameState.timeRemaining > 0n) {
-        setTimeRemaining((prev) => {
-          const newTime = prev > 0n ? prev - 1n : 0n;
-          if (newTime === 0n) {
-            refetch();
-          }
-          return newTime;
-        });
-      } else {
-        setTimeRemaining(0n);
-      }
+  // Event listeners - refetch on events
+  useGameEvents(
+    () => {
       refetch();
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [gameState, refetch]);
+      setNotification("🎉 Button pressed! Timer reset.");
+      setTimeout(() => setNotification(null), 5000);
+    },
+    () => {
+      refetch();
+      setNotification("🏆 Prize claimed! New game started.");
+      setTimeout(() => setNotification(null), 5000);
+    },
+    () => {
+      refetch();
+      setNotification("🆕 New game started!");
+      setTimeout(() => setNotification(null), 5000);
+    }
+  );
 
   // Update time remaining when game state changes
   useEffect(() => {
@@ -65,6 +71,23 @@ export default function Home() {
       setTimeRemaining(gameState.timeRemaining);
     }
   }, [gameState?.timeRemaining]);
+
+  // Client-side countdown
+  useEffect(() => {
+    if (!gameState || gameState.timeRemaining === 0n) return;
+
+    const interval = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1n) {
+          refetch();
+          return 0n;
+        }
+        return prev - 1n;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameState, refetch]);
 
   // Refetch game state after successful press
   useEffect(() => {
@@ -77,12 +100,24 @@ export default function Home() {
     ? formatUnits(gameState.prizePool, 18)
     : "0";
 
+  const progressiveJackpotFormatted = gameState?.progressiveJackpot
+    ? formatUnits(gameState.progressiveJackpot, 18)
+    : "0";
+
+  const hasEnoughBalance = balance && entryFee ? balance >= entryFee : false;
+
   const canPressButton =
     isConnected &&
     gameState?.gameActive &&
     gameState?.timeRemaining > 0n &&
     !isPressing &&
     !isConfirming;
+
+  const canPressFree =
+    canPressButton && isFreePlayEligible;
+
+  const canPressPaid =
+    canPressButton && hasEnoughBalance;
 
   const canClaimPrize =
     isConnected &&
@@ -104,7 +139,19 @@ export default function Home() {
           <p className="text-lg text-gray-600">
             The Celo Button Game
           </p>
+          {gameState && (
+            <p className="text-sm text-gray-500 mt-2">
+              Round #{gameState.currentRound.toString()}
+            </p>
+          )}
         </div>
+
+        {/* Notification */}
+        {notification && (
+          <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-center animate-fade-in">
+            {notification}
+          </div>
+        )}
 
         {/* Wallet Connection */}
         <div className="mb-6 flex justify-center [&_button]:bg-blue-600 [&_button]:hover:bg-blue-700 [&_button]:text-white [&_button]:font-semibold [&_button]:px-6 [&_button]:py-3 [&_button]:rounded-lg [&_button]:transition-colors">
@@ -126,13 +173,42 @@ export default function Home() {
         {/* Contract Not Deployed Warning */}
         {isConnected && !isWrongChain && BUTTON_GAME_ADDRESS === "0x0000000000000000000000000000000000000000" && (
           <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg text-center">
-            ⚠️ Contracts not deployed. Please set NEXT_PUBLIC_BUTTON_GAME_ADDRESS and NEXT_PUBLIC_CBG_TOKEN_ADDRESS environment variables.
+            ⚠️ Contracts not deployed. Please set NEXT_PUBLIC_BUTTON_GAME_ADDRESS environment variable.
+          </div>
+        )}
+
+        {/* Balance Warning */}
+        {isConnected && !isWrongChain && !hasEnoughBalance && !isFreePlayEligible && (
+          <div className="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg text-center">
+            ⚠️ Insufficient balance. You need {parseFloat(entryFeeFormatted).toFixed(4)} CELO to play. You have {parseFloat(balanceFormatted).toFixed(4)} CELO.
+          </div>
+        )}
+
+        {/* Error Messages */}
+        {pressError && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+            ❌ Error: {pressError.message || "Transaction failed"}
+          </div>
+        )}
+        {claimError && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+            ❌ Error: {claimError.message || "Claim failed"}
           </div>
         )}
 
         {/* Game Card */}
         {isConnected && !isWrongChain && (
           <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 space-y-6">
+            {/* Progressive Jackpot */}
+            {gameState && gameState.progressiveJackpot > 0n && (
+              <div className="text-center p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg">
+                <div className="text-sm text-gray-600 mb-1">Progressive Jackpot</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {parseFloat(progressiveJackpotFormatted).toFixed(4)} CELO
+                </div>
+              </div>
+            )}
+
             {/* Prize Pool Display */}
             <div className="text-center">
               <div className="text-sm text-gray-600 mb-2">Current Prize Pool</div>
@@ -160,7 +236,7 @@ export default function Home() {
               </div>
               {gameState?.timeRemaining === 0n && gameState?.prizePool > 0n && (
                 <div className="mt-2 text-sm text-orange-600 font-semibold">
-                  ⏰ Timer expired! Last player can claim prize
+                  ⏰ Timer expired! {gameState.lastPlayer === address ? "You can claim your prize!" : "Last player can claim prize"}
                 </div>
               )}
             </div>
@@ -169,21 +245,44 @@ export default function Home() {
             {gameState?.lastPlayer && gameState.lastPlayer !== "0x0000000000000000000000000000000000000000" && (
               <div className="text-center text-sm text-gray-600">
                 Last player: {gameState.lastPlayer.slice(0, 6)}...{gameState.lastPlayer.slice(-4)}
+                {gameState.lastPlayer === address && (
+                  <span className="ml-2 text-green-600 font-semibold">(You!)</span>
+                )}
               </div>
             )}
 
-            {/* Press Button */}
-            <button
-              onClick={() => pressButton()}
-              disabled={!canPressButton}
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold py-6 px-8 rounded-xl text-2xl md:text-3xl transition-all transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed shadow-lg disabled:shadow-none"
-            >
-              {isPressing || isConfirming
-                ? "Processing..."
-                : gameState?.timeRemaining === 0n
-                ? "Timer Expired"
-                : "🎯 PRESS BUTTON"}
-            </button>
+            {/* Free Play Button */}
+            {canPressFree && (
+              <button
+                onClick={() => pressButton(true)}
+                disabled={isPressing || isConfirming}
+                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors disabled:cursor-not-allowed"
+              >
+                {isPressing || isConfirming ? "Processing..." : "🎁 FREE PLAY (1 per day)"}
+              </button>
+            )}
+
+            {/* Free Play Info */}
+            {!isFreePlayEligible && timeUntilFreePlay !== null && timeUntilFreePlay > 0 && (
+              <div className="text-center text-sm text-gray-500">
+                Next free play in: {formatTime(timeUntilFreePlay)}
+              </div>
+            )}
+
+            {/* Press Button (Paid) */}
+            {canPressPaid && (
+              <button
+                onClick={() => pressButton(false)}
+                disabled={isPressing || isConfirming}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold py-6 px-8 rounded-xl text-2xl md:text-3xl transition-all transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed shadow-lg disabled:shadow-none"
+              >
+                {isPressing || isConfirming
+                  ? "Processing..."
+                  : gameState?.timeRemaining === 0n
+                  ? "Timer Expired"
+                  : "🎯 PRESS BUTTON"}
+              </button>
+            )}
 
             {/* Claim Prize Button */}
             {canClaimPrize && (
@@ -209,6 +308,51 @@ export default function Home() {
                 Game is currently inactive
               </div>
             )}
+
+            {/* Winners Toggle */}
+            <div className="text-center">
+              <button
+                onClick={() => setShowWinners(!showWinners)}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                {showWinners ? "Hide" : "Show"} Winner History
+              </button>
+            </div>
+
+            {/* Winners List */}
+            {showWinners && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3">Recent Winners</h3>
+                {winnersLoading ? (
+                  <div className="text-center text-gray-500">Loading...</div>
+                ) : winners && winners.length > 0 ? (
+                  <div className="space-y-2">
+                    {winners.map((winner, idx) => (
+                      <div key={idx} className="flex justify-between items-center p-2 bg-white rounded">
+                        <div>
+                          <div className="font-medium">
+                            Round #{winner.round.toString()}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {winner.winner.slice(0, 6)}...{winner.winner.slice(-4)}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-green-600">
+                            {parseFloat(formatUnits(winner.prize, 18)).toFixed(4)} CELO
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(Number(winner.timestamp) * 1000).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500">No winners yet</div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -223,11 +367,19 @@ export default function Home() {
               </div>
               <div className="flex items-start gap-3">
                 <span className="text-2xl">2️⃣</span>
-                <p>Press the button to reset the timer and add CELO to the prize pool</p>
+                <p>Get 1 free play every 24 hours, or pay {parseFloat(entryFeeFormatted).toFixed(4)} CELO to play</p>
               </div>
               <div className="flex items-start gap-3">
                 <span className="text-2xl">3️⃣</span>
+                <p>Press the button to reset the timer and add CELO to the prize pool</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">4️⃣</span>
                 <p>If you&apos;re the last player when the timer hits zero, claim your prize!</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">5️⃣</span>
+                <p>New games start automatically with an initial prize pool</p>
               </div>
             </div>
           </div>

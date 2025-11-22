@@ -7,5 +7,15 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true
-  }
+  },
+  "include": [
+    "hardhat.config.ts",
+    "test/**/*",
+    "ignition/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "cache",
+    "artifacts"
+  ]
 }
