@@ -43,7 +43,7 @@ export default function Home() {
   const { initialPrizePool, initialPrizePoolFormatted, isLoading: initialPrizePoolLoading } = useInitialPrizePool();
 
   const { pressButton, isPending: isPressing, isConfirming, isSuccess: pressSuccess, error: pressError, isUsingFreePlay } = usePressButton();
-  const { claimPrize, isPending: isClaiming, isSuccess: claimSuccess, error: claimError } = useClaimPrize();
+  const { claimPrize, isPending: isClaiming, isConfirming: isClaimConfirming, isSuccess: claimSuccess, error: claimError } = useClaimPrize();
   const { isEligible: isFreePlayEligible, timeUntilFreePlay } = useFreePlayEligibility();
   const { balance, balanceFormatted } = useUserBalance();
   const { winners, isLoading: winnersLoading } = useWinners(10);
@@ -51,22 +51,28 @@ export default function Home() {
   const [timeRemaining, setTimeRemaining] = useState<bigint>(0n);
   const [lastKnownRound, setLastKnownRound] = useState<bigint | null>(null);
 
-  // Event listeners - refetch on events (immediate updates)
+  // Event listeners - refetch on events (only after transaction is confirmed)
   useGameEvents(
     () => {
-      // Immediate refetch on button press
-      refetch();
-      toast.success("Button pressed! Timer reset.");
+      // Only refetch if not currently confirming a transaction
+      if (!isConfirming && !isClaimConfirming) {
+        refetch();
+        toast.success("Button pressed! Timer reset.");
+      }
     },
     () => {
-      // Immediate refetch on prize won
-      refetch();
-      toast.success("Prize claimed! New game started.");
+      // Only refetch if not currently confirming a transaction
+      if (!isConfirming && !isClaimConfirming) {
+        refetch();
+        toast.success("Prize claimed! New game started.");
+      }
     },
     () => {
-      // Immediate refetch on new game started
-      refetch();
-      toast.success("New game started!");
+      // Only refetch if not currently confirming a transaction
+      if (!isConfirming && !isClaimConfirming) {
+        refetch();
+        toast.success("New game started!");
+      }
     }
   );
 
@@ -211,6 +217,7 @@ export default function Home() {
               isPressing={isPressing}
               isConfirming={isConfirming}
               isClaiming={isClaiming}
+              isClaimConfirming={isClaimConfirming}
               isUsingFreePlay={isUsingFreePlay}
               isFreePlayEligible={isFreePlayEligible}
               hasEnoughBalance={hasEnoughBalance}

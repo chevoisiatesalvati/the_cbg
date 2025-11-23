@@ -11,6 +11,7 @@ interface GameButtonProps {
   isPressing: boolean;
   isConfirming: boolean;
   isClaiming: boolean;
+  isClaimConfirming: boolean;
   isUsingFreePlay: boolean;
   isFreePlayEligible: boolean;
   hasEnoughBalance: boolean;
@@ -30,6 +31,7 @@ export function GameButton({
   isPressing,
   isConfirming,
   isClaiming,
+  isClaimConfirming,
   isUsingFreePlay,
   isFreePlayEligible,
   hasEnoughBalance,
@@ -55,8 +57,8 @@ export function GameButton({
         isLoading={gameStateLoading}
       />
 
-      {/* Show loading spinner when transaction is in progress, even if canPressButton is false */}
-      {isPressing || isConfirming ? (
+      {/* Show loading spinner when transaction is in progress or game state is loading */}
+      {gameStateLoading || isPressing || isConfirming ? (
         <motion.button
           disabled
           className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-yellow border-4 border-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(0,0,0,1)] transition-all"
@@ -72,6 +74,17 @@ export function GameButton({
               className="w-12 h-12 border-4 border-white border-t-transparent rounded-full"
             />
           </motion.div>
+        </motion.button>
+      ) : isClaiming || isClaimConfirming ? (
+        <motion.button
+          disabled
+          className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-green border-4 border-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(0,0,0,1)] transition-all"
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-4 border-white border-t-transparent rounded-full"
+          />
         </motion.button>
       ) : canPressButton ? (
         <motion.button
@@ -137,23 +150,7 @@ export function GameButton({
             GAME INACTIVE
           </span>
         </div>
-      ) : gameStateLoading ? (
-        <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-tan-medium border-4 border-black flex items-center justify-center">
-          <span className="font-inter font-bold text-celo-brown text-sm uppercase">
-            LOADING...
-          </span>
-        </div>
-      ) : (
-        <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-tan-medium border-4 border-black flex items-center justify-center">
-          <span className="font-inter font-bold text-celo-brown text-sm uppercase text-center px-4">
-            {!isFreePlayEligible && !hasEnoughBalance
-              ? "INSUFFICIENT BALANCE"
-              : timeRemaining > 0n
-              ? "READY TO PLAY"
-              : "CONNECT WALLET"}
-          </span>
-        </div>
-      )}
+      ) : null}
 
       {!isFreePlayEligible && timeUntilFreePlay !== null && timeUntilFreePlay > 0 && (
         <motion.div

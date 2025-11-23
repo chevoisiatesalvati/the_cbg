@@ -9,26 +9,33 @@ interface GameTimerProps {
 }
 
 export function GameTimer({ timeRemaining, canClaimPrize, isLoading }: GameTimerProps) {
+  const isExpired = timeRemaining === 0n;
+  
   return (
     <div
       className={`mb-4 border-2 p-3 w-full ${
-        timeRemaining === 0n && canClaimPrize
+        isExpired
           ? "bg-celo-orange text-black border-black"
           : "bg-black text-celo-yellow border-celo-yellow"
       }`}
     >
       <div className="font-inter text-xs font-750 uppercase tracking-wider mb-1 text-center">
-        {timeRemaining === 0n && canClaimPrize
-          ? "⏰ TIMER EXPIRED - CLAIM PRIZE"
+        {isExpired
+          ? canClaimPrize
+            ? "⏰ TIMER EXPIRED - CLAIM PRIZE"
+            : "⏰ TIMER EXPIRED"
           : "TIME REMAINING"}
       </div>
       <div className="font-mono text-2xl md:text-3xl font-bold text-center min-h-[2.5rem] flex items-center justify-center">
         {isLoading ? (
           <span>--:--</span>
-        ) : timeRemaining === 0n ? (
-          "00:00"
+        ) : isExpired ? (
+          <span className="text-red-600">00:00</span>
         ) : (
-          <span className={Number(timeRemaining) <= 10 ? "animate-pulse-strong text-red-600" : ""}>
+          <span 
+            key={timeRemaining.toString()} 
+            className={Number(timeRemaining) <= 10 ? "animate-pulse-strong text-red-600" : ""}
+          >
             {formatTime(timeRemaining)}
           </span>
         )}
