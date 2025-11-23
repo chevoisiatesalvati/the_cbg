@@ -23,8 +23,8 @@ import { GameButton } from "@/components/game/GameButton";
 import { StatsPanel } from "@/components/game/StatsPanel";
 import { WinnersList } from "@/components/game/WinnersList";
 import { Instructions } from "@/components/game/Instructions";
-import { RecentPlayers } from "@/components/game/RecentPlayers";
 import { PlayerProfile } from "@/components/game/PlayerProfile";
+import { LastPlays } from "@/components/game/LastPlays";
 import { useRecentPlayers } from "@/hooks/use-recent-players";
 import { getButtonGameAddress } from "@/lib/contracts";
 
@@ -51,7 +51,7 @@ export default function Home() {
   const { isEligible: isFreePlayEligible, timeUntilFreePlay } = useFreePlayEligibility();
   const { balance, balanceFormatted } = useUserBalance();
   const { winners, isLoading: winnersLoading } = useWinners(10);
-  const { addPlayer } = useRecentPlayers(10);
+  const { addPlayer, refetch: refetchRecentPlayers } = useRecentPlayers(10);
 
   const [timeRemaining, setTimeRemaining] = useState<bigint>(0n);
   const [lastKnownRound, setLastKnownRound] = useState<bigint | null>(null);
@@ -62,6 +62,10 @@ export default function Home() {
       // Only refetch if not currently confirming a transaction
       if (!isConfirming && !isClaimConfirming) {
         refetch();
+        // Refetch recent players after a short delay to get the latest events
+        setTimeout(() => {
+          refetchRecentPlayers();
+        }, 1500);
         toast.success("Button pressed! Timer reset.");
       }
     },
@@ -69,6 +73,10 @@ export default function Home() {
       // Only refetch if not currently confirming a transaction
       if (!isConfirming && !isClaimConfirming) {
         refetch();
+        // Refetch recent players when prize is claimed
+        setTimeout(() => {
+          refetchRecentPlayers();
+        }, 1500);
         toast.success("Prize claimed! New game started.");
       }
     },
@@ -76,6 +84,10 @@ export default function Home() {
       // Only refetch if not currently confirming a transaction
       if (!isConfirming && !isClaimConfirming) {
         refetch();
+        // Refetch recent players when new game starts (to reset the list)
+        setTimeout(() => {
+          refetchRecentPlayers();
+        }, 1500);
         toast.success("New game started!");
       }
     }
@@ -114,10 +126,12 @@ export default function Home() {
       refetch();
       const timeout = setTimeout(() => {
         refetch();
+        // Also refetch recent players to ensure we have the latest data
+        refetchRecentPlayers();
       }, 1000);
       return () => clearTimeout(timeout);
     }
-  }, [pressSuccess, address, isUsingFreePlay, addPlayer, refetch]);
+  }, [pressSuccess, address, isUsingFreePlay, addPlayer, refetch, refetchRecentPlayers]);
 
   // Show error toast for press errors
   useEffect(() => {
@@ -233,8 +247,6 @@ export default function Home() {
               gameStateLoading={gameStateLoading}
               gameActive={gameState?.gameActive || false}
               timeRemaining={timeRemaining}
-              lastPlayer={gameState?.lastPlayer || null}
-              address={address}
               onPressButton={pressButton}
               onClaimPrize={() => claimPrize(0n)}
             />
@@ -244,9 +256,9 @@ export default function Home() {
               entryFeeFormatted={entryFeeFormatted}
               isConnected={isConnected}
               balanceFormatted={balanceFormatted}
+              lastPlays={<LastPlays lastPlayer={gameState?.lastPlayer || null} address={address} />}
             >
               {isConnected && <PlayerProfile />}
-              <RecentPlayers initialCount={3} maxCount={10} />
               <WinnersList winners={winners} isLoading={winnersLoading} />
             </StatsPanel>
           </div>

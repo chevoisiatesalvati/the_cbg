@@ -7,10 +7,11 @@ interface StatsPanelProps {
   entryFeeFormatted: string;
   isConnected: boolean;
   balanceFormatted: string;
+  lastPlays?: ReactNode;
   children?: ReactNode;
 }
 
-export function StatsPanel({ entryFeeFormatted, isConnected, balanceFormatted, children }: StatsPanelProps) {
+export function StatsPanel({ entryFeeFormatted, isConnected, balanceFormatted, lastPlays, children }: StatsPanelProps) {
   return (
     <motion.div
       initial={{ opacity: 0, x: 50 }}
@@ -18,6 +19,8 @@ export function StatsPanel({ entryFeeFormatted, isConnected, balanceFormatted, c
       transition={{ delay: 0.5 }}
       className="lg:col-span-1 space-y-3"
     >
+      {lastPlays}
+
       <div className="bg-cat-white border-4 border-cat-black p-3">
         <div className="font-inter text-xs font-750 uppercase tracking-wider mb-2 text-cat-black">
           ENTRY FEE

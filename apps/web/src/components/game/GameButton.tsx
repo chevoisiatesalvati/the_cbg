@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { CeloLogo } from "@/components/celo-logo";
 import { formatTime } from "@/lib/app-utils";
 import { GameTimer } from "./GameTimer";
-import { EnsAddress } from "@/components/ens/EnsAddress";
 
 interface GameButtonProps {
   canPressButton: boolean;
@@ -20,8 +19,6 @@ interface GameButtonProps {
   gameStateLoading: boolean;
   gameActive: boolean;
   timeRemaining: bigint;
-  lastPlayer: string | null;
-  address: string | undefined;
   onPressButton: () => void;
   onClaimPrize: () => void;
 }
@@ -40,8 +37,6 @@ export function GameButton({
   gameStateLoading,
   gameActive,
   timeRemaining,
-  lastPlayer,
-  address,
   onPressButton,
   onClaimPrize,
 }: GameButtonProps) {
@@ -165,30 +160,6 @@ export function GameButton({
         >
           <div className="font-inter text-xs font-750 uppercase text-cat-black">
             NEXT FREE: {formatTime(timeUntilFreePlay)}
-          </div>
-        </motion.div>
-      )}
-
-      {lastPlayer && lastPlayer !== "0x0000000000000000000000000000000000000000" && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-3 text-center"
-        >
-          <div className="font-inter text-xs font-750 uppercase text-cat-black mb-1">
-            LAST PLAYER
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <EnsAddress
-              address={lastPlayer}
-              showAvatar={true}
-              avatarSize={20}
-              showAddress={true}
-              className="justify-center"
-            />
-            {lastPlayer === address && (
-              <span className="ml-2 text-cat-darkPink font-bold text-xs">(YOU)</span>
-            )}
           </div>
         </motion.div>
       )}
