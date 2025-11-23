@@ -1,6 +1,5 @@
 import { useEnsName, useEnsAvatar } from "wagmi";
 import { mainnet } from "wagmi/chains";
-import { useMemo } from "react";
 
 /**
  * Hook to resolve ENS name from an address
@@ -34,11 +33,22 @@ export function useEnsNameFromAddress(address: `0x${string}` | string | null | u
 export function useEnsAvatarFromAddress(address: `0x${string}` | string | null | undefined) {
   const addressTyped = address && address.startsWith("0x") ? (address as `0x${string}`) : undefined;
   
-  const { data: ensAvatar, isLoading, error } = useEnsAvatar({
+  // First resolve the address to an ENS name
+  const { data: ensName } = useEnsName({
     address: addressTyped,
-    chainId: mainnet.id, // ENS resolution always starts from Ethereum Mainnet
+    chainId: mainnet.id,
     query: {
       enabled: !!addressTyped && addressTyped !== "0x0000000000000000000000000000000000000000",
+      retry: 1,
+    },
+  });
+  
+  // Then use the name to get the avatar
+  const { data: ensAvatar, isLoading, error } = useEnsAvatar({
+    name: ensName || undefined,
+    chainId: mainnet.id, // ENS resolution always starts from Ethereum Mainnet
+    query: {
+      enabled: !!ensName,
       retry: 1,
     },
   });
