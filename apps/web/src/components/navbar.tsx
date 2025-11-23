@@ -4,6 +4,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ExternalLink } from "lucide-react"
 import { Wallet, Connect, Avatar, Name } from "@composer-kit/ui/wallet"
+import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { useChainId } from "wagmi"
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -12,9 +14,10 @@ const navLinks = [
 
 export function Navbar() {
   const pathname = usePathname()
+  const chainId = useChainId()
   
   return (
-    <header className="sticky top-0 z-50 w-full border-b-2 border-black bg-celo-tan-light backdrop-blur-md supports-[backdrop-filter]:bg-celo-tan-light/60">
+    <header className="sticky top-0 z-50 w-full border-b-2 border-black bg-background backdrop-blur-md supports-[backdrop-filter]:bg-background/95">
       <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4">
         <div className="flex items-center gap-2">
           {/* Title */}
@@ -45,8 +48,56 @@ export function Navbar() {
           ))}
         </nav>
         
-        {/* Connect button */}
+        {/* Connect button and chain selector */}
         <div className="flex items-center gap-3">
+          <ConnectButton.Custom>
+            {({ account, chain, openChainModal, mounted }) => {
+              const ready = mounted
+              const connected = ready && account && chain
+
+              return (
+                <div
+                  {...(!ready && {
+                    'aria-hidden': true,
+                    style: {
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    },
+                  })}
+                >
+                  {connected && (
+                    <button
+                      onClick={openChainModal}
+                      type="button"
+                      className="px-3 py-1.5 text-sm font-medium border-2 border-black bg-white text-black rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-celo-yellow flex items-center gap-2"
+                    >
+                      {chain.hasIcon && (
+                        <div
+                          style={{
+                            background: chain.iconBackground,
+                            width: 16,
+                            height: 16,
+                            borderRadius: 999,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {chain.iconUrl && (
+                            <img
+                              alt={chain.name ?? 'Chain icon'}
+                              src={chain.iconUrl}
+                              style={{ width: 16, height: 16 }}
+                            />
+                          )}
+                        </div>
+                      )}
+                      <span>{chain.name}</span>
+                    </button>
+                  )}
+                </div>
+              )
+            }}
+          </ConnectButton.Custom>
           <Wallet>
             <Connect label="Connect">
               <Avatar />

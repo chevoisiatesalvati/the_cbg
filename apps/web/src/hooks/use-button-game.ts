@@ -1,11 +1,17 @@
-import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useWatchContractEvent, useBalance, useEstimateGas } from "wagmi";
-import { BUTTON_GAME_ABI, BUTTON_GAME_ADDRESS } from "@/lib/contracts";
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useWatchContractEvent, useBalance, useEstimateGas, useChainId } from "wagmi";
+import { BUTTON_GAME_ABI, getButtonGameAddress } from "@/lib/contracts";
 import { useAccount } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
 const isContractDeployed = (address: `0x${string}`) => address !== ZERO_ADDRESS;
+
+// Helper hook to get the contract address for the current chain
+function useButtonGameAddress() {
+  const chainId = useChainId();
+  return useMemo(() => getButtonGameAddress(chainId), [chainId]);
+}
 
 export interface WinnerInfo {
   winner: `0x${string}`;
@@ -25,12 +31,13 @@ export interface GameState {
 }
 
 export function useGameState() {
+  const contractAddress = useButtonGameAddress();
   const { data, isLoading, error, refetch } = useReadContract({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     functionName: "getGameState",
     query: {
-      enabled: isContractDeployed(BUTTON_GAME_ADDRESS),
+      enabled: isContractDeployed(contractAddress),
       refetchInterval: 1000,
     },
   });
@@ -54,12 +61,13 @@ export function useGameState() {
 }
 
 export function useEntryFee() {
+  const contractAddress = useButtonGameAddress();
   const { data, isLoading } = useReadContract({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     functionName: "entryFee",
     query: {
-      enabled: isContractDeployed(BUTTON_GAME_ADDRESS),
+      enabled: isContractDeployed(contractAddress),
     },
   });
 
@@ -71,12 +79,13 @@ export function useEntryFee() {
 }
 
 export function useTimerDuration() {
+  const contractAddress = useButtonGameAddress();
   const { data, isLoading } = useReadContract({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     functionName: "timerDuration",
     query: {
-      enabled: isContractDeployed(BUTTON_GAME_ADDRESS),
+      enabled: isContractDeployed(contractAddress),
     },
   });
 
@@ -87,12 +96,13 @@ export function useTimerDuration() {
 }
 
 export function useInitialPrizePool() {
+  const contractAddress = useButtonGameAddress();
   const { data, isLoading } = useReadContract({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     functionName: "initialPrizePool",
     query: {
-      enabled: isContractDeployed(BUTTON_GAME_ADDRESS),
+      enabled: isContractDeployed(contractAddress),
     },
   });
 
@@ -105,23 +115,24 @@ export function useInitialPrizePool() {
 
 export function useFreePlayEligibility() {
   const { address } = useAccount();
+  const contractAddress = useButtonGameAddress();
   const { data: lastFreePlay, isLoading } = useReadContract({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     functionName: "lastFreePlay",
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address && isContractDeployed(BUTTON_GAME_ADDRESS),
+      enabled: !!address && isContractDeployed(contractAddress),
     },
   });
 
   const { data: isEligible } = useReadContract({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     functionName: "isEligibleForFreePlay",
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address && isContractDeployed(BUTTON_GAME_ADDRESS),
+      enabled: !!address && isContractDeployed(contractAddress),
     },
   });
 
@@ -159,6 +170,7 @@ export function useUserBalance() {
 }
 
 export function usePressButton() {
+  const contractAddress = useButtonGameAddress();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
@@ -173,7 +185,7 @@ export function usePressButton() {
     if (!entryFee && !useFreePlay) return;
     
     writeContract({
-      address: BUTTON_GAME_ADDRESS,
+      address: contractAddress,
       abi: BUTTON_GAME_ABI,
       functionName: "pressButton",
       args: [useFreePlay],
@@ -183,7 +195,7 @@ export function usePressButton() {
 
   // Estimate gas for press button
   const { data: gasEstimate, isLoading: isEstimatingGas } = useEstimateGas({
-    to: BUTTON_GAME_ADDRESS,
+    to: contractAddress,
     data: entryFee ? undefined : undefined, // Will be set dynamically
   });
 
@@ -201,6 +213,7 @@ export function usePressButton() {
 }
 
 export function useClaimPrize() {
+  const contractAddress = useButtonGameAddress();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
@@ -208,7 +221,7 @@ export function useClaimPrize() {
 
   const claimPrize = (sponsorshipAmount: bigint = 0n) => {
     writeContract({
-      address: BUTTON_GAME_ADDRESS,
+      address: contractAddress,
       abi: BUTTON_GAME_ABI,
       functionName: "claimPrizeAndStartNewGame",
       args: [sponsorshipAmount],
@@ -227,13 +240,14 @@ export function useClaimPrize() {
 }
 
 export function useWinners(count: number = 10) {
+  const contractAddress = useButtonGameAddress();
   const { data, isLoading, error, refetch } = useReadContract({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     functionName: "getLatestWinners",
     args: [BigInt(count)],
     query: {
-      enabled: isContractDeployed(BUTTON_GAME_ADDRESS),
+      enabled: isContractDeployed(contractAddress),
     },
   });
 
@@ -247,8 +261,9 @@ export function useWinners(count: number = 10) {
 
 // Event listeners
 export function useGameEvents(onButtonPressed?: () => void, onPrizeWon?: () => void, onNewGame?: () => void) {
+  const contractAddress = useButtonGameAddress();
   useWatchContractEvent({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     eventName: "ButtonPressed",
     onLogs: () => {
@@ -257,7 +272,7 @@ export function useGameEvents(onButtonPressed?: () => void, onPrizeWon?: () => v
   });
 
   useWatchContractEvent({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     eventName: "PrizeWon",
     onLogs: () => {
@@ -266,7 +281,7 @@ export function useGameEvents(onButtonPressed?: () => void, onPrizeWon?: () => v
   });
 
   useWatchContractEvent({
-    address: BUTTON_GAME_ADDRESS,
+    address: contractAddress,
     abi: BUTTON_GAME_ABI,
     eventName: "NewGameStarted",
     onLogs: () => {

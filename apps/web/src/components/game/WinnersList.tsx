@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatUnits } from "viem";
 import { useState } from "react";
 import type { WinnerInfo } from "@/hooks/use-button-game";
+import { EnsAddress } from "@/components/ens/EnsAddress";
 
 interface WinnersListProps {
   winners: WinnerInfo[] | undefined;
@@ -48,8 +49,13 @@ export function WinnersList({ winners, isLoading }: WinnersListProps) {
                     <div className="font-inter text-xs font-bold uppercase text-celo-green mb-1">
                       ROUND #{winner.round.toString()}
                     </div>
-                    <div className="font-mono text-xs mb-1">
-                      {winner.winner.slice(0, 6)}...{winner.winner.slice(-4)}
+                    <div className="mb-1">
+                      <EnsAddress
+                        address={winner.winner}
+                        showAvatar={true}
+                        avatarSize={20}
+                        showAddress={true}
+                      />
                     </div>
                     <div className="font-alpina text-base font-light italic text-celo-purple">
                       {parseFloat(formatUnits(winner.prize, 18)).toFixed(4)} CELO

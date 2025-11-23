@@ -6,4 +6,6 @@ export { GameButton } from "./GameButton";
 export { StatsPanel } from "./StatsPanel";
 export { WinnersList } from "./WinnersList";
 export { Instructions } from "./Instructions";
+export { RecentPlayers } from "./RecentPlayers";
+export { PlayerProfile } from "./PlayerProfile";
 

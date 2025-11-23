@@ -15,7 +15,7 @@ import {
   useWinners,
   useGameEvents,
 } from "@/hooks/use-button-game";
-import { celoSepolia } from "wagmi/chains";
+import { celo, celoSepolia } from "wagmi/chains";
 import { RoundIndicator } from "@/components/game/RoundIndicator";
 import { ChainWarning, ContractWarning, BalanceWarning } from "@/components/game/Warnings";
 import { PrizePool } from "@/components/game/PrizePool";
@@ -23,20 +23,24 @@ import { GameButton } from "@/components/game/GameButton";
 import { StatsPanel } from "@/components/game/StatsPanel";
 import { WinnersList } from "@/components/game/WinnersList";
 import { Instructions } from "@/components/game/Instructions";
-import { BUTTON_GAME_ADDRESS } from "@/lib/contracts";
+import { RecentPlayers } from "@/components/game/RecentPlayers";
+import { PlayerProfile } from "@/components/game/PlayerProfile";
+import { useRecentPlayers } from "@/hooks/use-recent-players";
+import { getButtonGameAddress } from "@/lib/contracts";
 
 export default function Home() {
-  // Debug: Log contract address on component mount
-  useEffect(() => {
-    console.log("[DEBUG] Home Component - Contract Address:", {
-      contractAddress: BUTTON_GAME_ADDRESS,
-      envVar: process.env.NEXT_PUBLIC_BUTTON_GAME_ADDRESS,
-      isZeroAddress: BUTTON_GAME_ADDRESS === "0x0000000000000000000000000000000000000000",
-    });
-  }, []);
-  
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
+  
+  // Debug: Log contract address on component mount
+  useEffect(() => {
+    const contractAddress = getButtonGameAddress(chainId);
+    console.log("[DEBUG] Home Component - Contract Address:", {
+      contractAddress,
+      chainId,
+      isZeroAddress: contractAddress === "0x0000000000000000000000000000000000000000",
+    });
+  }, [chainId]);
   const { gameState, isLoading: gameStateLoading, refetch } = useGameState();
   const { entryFeeFormatted = "0", entryFee } = useEntryFee();
   const { timerDuration, isLoading: timerDurationLoading } = useTimerDuration();
@@ -47,6 +51,7 @@ export default function Home() {
   const { isEligible: isFreePlayEligible, timeUntilFreePlay } = useFreePlayEligibility();
   const { balance, balanceFormatted } = useUserBalance();
   const { winners, isLoading: winnersLoading } = useWinners(10);
+  const { addPlayer } = useRecentPlayers(10);
 
   const [timeRemaining, setTimeRemaining] = useState<bigint>(0n);
   const [lastKnownRound, setLastKnownRound] = useState<bigint | null>(null);
@@ -102,7 +107,9 @@ export default function Home() {
 
   // Refetch game state after successful press - immediate refetch
   useEffect(() => {
-    if (pressSuccess) {
+    if (pressSuccess && address) {
+      // Add player to recent players for immediate feedback
+      addPlayer(address as `0x${string}`, isUsingFreePlay);
       // Immediate refetch, then refetch again after a short delay to ensure state is updated
       refetch();
       const timeout = setTimeout(() => {
@@ -110,7 +117,7 @@ export default function Home() {
       }, 1000);
       return () => clearTimeout(timeout);
     }
-  }, [pressSuccess, refetch]);
+  }, [pressSuccess, address, isUsingFreePlay, addPlayer, refetch]);
 
   // Show error toast for press errors
   useEffect(() => {
@@ -162,7 +169,8 @@ export default function Home() {
   }, [gameState?.currentRound, gameState?.timeRemaining, gameState?.prizePool, gameState?.lastPlayer, lastKnownRound, refetch]);
 
   const hasEnoughBalance = balance && entryFee ? balance >= entryFee : false;
-  const isWrongChain = chainId !== celoSepolia.id;
+  const isWrongChain = chainId !== celo.id && chainId !== celoSepolia.id;
+  const contractAddress = getButtonGameAddress(chainId);
 
   const canPressButton =
     isConnected &&
@@ -237,6 +245,8 @@ export default function Home() {
               isConnected={isConnected}
               balanceFormatted={balanceFormatted}
             >
+              {isConnected && <PlayerProfile />}
+              <RecentPlayers initialCount={3} maxCount={10} />
               <WinnersList winners={winners} isLoading={winnersLoading} />
             </StatsPanel>
           </div>

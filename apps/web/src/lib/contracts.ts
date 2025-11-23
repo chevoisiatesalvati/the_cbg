@@ -151,6 +151,26 @@ export const BUTTON_GAME_ABI = [
   },
 ] as const;
 
-// Contract addresses - these will be set after deployment
-export const BUTTON_GAME_ADDRESS = (process.env.NEXT_PUBLIC_BUTTON_GAME_ADDRESS ||
-  "0x0000000000000000000000000000000000000000") as `0x${string}`;
+import { celo, celoSepolia } from "wagmi/chains";
+import { env } from "@/lib/env";
+
+/**
+ * Get the ButtonGame contract address for the given chain ID
+ * @param chainId - The chain ID (celo.id = 42220, celoSepolia.id = 11142220)
+ * @returns The contract address for the chain, or zero address if not configured
+ */
+export function getButtonGameAddress(chainId: number): `0x${string}` {
+  const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
+  
+  // Use specific chain addresses from environment variables
+  if (chainId === celo.id) {
+    return (env.NEXT_PUBLIC_BUTTON_GAME_ADDRESS_MAINNET || ZERO_ADDRESS) as `0x${string}`;
+  }
+  
+  if (chainId === celoSepolia.id) {
+    return (env.NEXT_PUBLIC_BUTTON_GAME_ADDRESS_TESTNET || ZERO_ADDRESS) as `0x${string}`;
+  }
+  
+  // Fallback to zero address for unknown chains
+  return ZERO_ADDRESS;
+}

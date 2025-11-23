@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BUTTON_GAME_ADDRESS } from "@/lib/contracts";
+import { useChainId } from "wagmi";
+import { getButtonGameAddress } from "@/lib/contracts";
 
 interface ChainWarningProps {
   isConnected: boolean;
@@ -17,7 +18,7 @@ export function ChainWarning({ isConnected, isWrongChain }: ChainWarningProps) {
       animate={{ scale: 1 }}
       className="mb-3 p-3 bg-celo-orange border-2 border-black text-black font-inter font-bold text-sm"
     >
-      ⚠️ SWITCH TO CELO SEPOLIA TESTNET
+      ⚠️ SWITCH TO CELO MAINNET OR CELO SEPOLIA TESTNET
     </motion.div>
   );
 }
@@ -28,7 +29,10 @@ interface ContractWarningProps {
 }
 
 export function ContractWarning({ isConnected, isWrongChain }: ContractWarningProps) {
-  if (!isConnected || isWrongChain || BUTTON_GAME_ADDRESS !== "0x0000000000000000000000000000000000000000") {
+  const chainId = useChainId();
+  const contractAddress = getButtonGameAddress(chainId);
+  
+  if (!isConnected || isWrongChain || contractAddress !== "0x0000000000000000000000000000000000000000") {
     return null;
   }
 

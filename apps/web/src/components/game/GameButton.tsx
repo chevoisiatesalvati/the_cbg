@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { CeloLogo } from "@/components/celo-logo";
 import { formatTime } from "@/lib/app-utils";
 import { GameTimer } from "./GameTimer";
+import { EnsAddress } from "@/components/ens/EnsAddress";
 
 interface GameButtonProps {
   canPressButton: boolean;
@@ -173,10 +174,16 @@ export function GameButton({
           <div className="font-inter text-xs font-750 uppercase text-celo-brown mb-1">
             LAST PLAYER
           </div>
-          <div className="font-mono text-xs">
-            {lastPlayer.slice(0, 6)}...{lastPlayer.slice(-4)}
+          <div className="flex items-center justify-center gap-2">
+            <EnsAddress
+              address={lastPlayer}
+              showAvatar={true}
+              avatarSize={20}
+              showAddress={true}
+              className="justify-center"
+            />
             {lastPlayer === address && (
-              <span className="ml-2 text-celo-green font-bold">(YOU)</span>
+              <span className="ml-2 text-celo-green font-bold text-xs">(YOU)</span>
             )}
           </div>
         </motion.div>
