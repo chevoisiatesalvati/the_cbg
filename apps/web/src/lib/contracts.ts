@@ -15,6 +15,13 @@ export const BUTTON_GAME_ABI = [
     type: "function",
   },
   {
+    inputs: [{ internalType: "uint256", name: "sponsorshipAmount", type: "uint256" }],
+    name: "claimPrizeAndStartNewGame",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "getGameState",
     outputs: [
@@ -147,3 +154,12 @@ export const BUTTON_GAME_ABI = [
 // Contract addresses - these will be set after deployment
 export const BUTTON_GAME_ADDRESS = (process.env.NEXT_PUBLIC_BUTTON_GAME_ADDRESS ||
   "0x0000000000000000000000000000000000000000") as `0x${string}`;
+
+// Debug: Log contract address on module load
+if (typeof window !== "undefined") {
+  console.log("[DEBUG] Contract Address Configuration:", {
+    envVar: process.env.NEXT_PUBLIC_BUTTON_GAME_ADDRESS,
+    resolvedAddress: BUTTON_GAME_ADDRESS,
+    isZeroAddress: BUTTON_GAME_ADDRESS === "0x0000000000000000000000000000000000000000",
+  });
+}

@@ -1,0 +1,72 @@
+"use client";
+
+import { motion, AnimatePresence } from "framer-motion";
+import { formatUnits } from "viem";
+import { useState } from "react";
+import type { WinnerInfo } from "@/hooks/use-button-game";
+
+interface WinnersListProps {
+  winners: WinnerInfo[] | undefined;
+  isLoading: boolean;
+}
+
+export function WinnersList({ winners, isLoading }: WinnersListProps) {
+  const [showWinners, setShowWinners] = useState(false);
+
+  return (
+    <>
+      <button
+        onClick={() => setShowWinners(!showWinners)}
+        className="w-full bg-celo-blue border-2 border-black p-2 text-black font-inter font-bold uppercase text-sm hover:bg-black hover:text-celo-blue transition-colors"
+      >
+        {showWinners ? "HIDE" : "SHOW"} WINNERS
+      </button>
+
+      <AnimatePresence>
+        {showWinners && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-white border-2 border-black p-3 overflow-hidden max-h-96 overflow-y-auto"
+          >
+            <div className="font-inter text-xs font-750 uppercase tracking-wider mb-3 text-celo-brown">
+              RECENT WINNERS
+            </div>
+            {isLoading ? (
+              <div className="text-center font-inter text-celo-brown text-xs">LOADING...</div>
+            ) : winners && winners.length > 0 ? (
+              <div className="space-y-2">
+                {winners.map((winner, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="border-2 border-black p-2"
+                  >
+                    <div className="font-inter text-xs font-bold uppercase text-celo-green mb-1">
+                      ROUND #{winner.round.toString()}
+                    </div>
+                    <div className="font-mono text-xs mb-1">
+                      {winner.winner.slice(0, 6)}...{winner.winner.slice(-4)}
+                    </div>
+                    <div className="font-alpina text-base font-light italic text-celo-purple">
+                      {parseFloat(formatUnits(winner.prize, 18)).toFixed(4)} CELO
+                    </div>
+                    <div className="font-inter text-xs text-celo-brown mt-1">
+                      {new Date(Number(winner.timestamp) * 1000).toLocaleDateString()}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center font-inter text-celo-brown text-xs">NO WINNERS YET</div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+

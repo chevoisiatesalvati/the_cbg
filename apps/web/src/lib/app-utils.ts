@@ -31,3 +31,20 @@ export function isValidAddress(address: string): boolean {
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/**
+ * Format time in seconds to HH:MM:SS or MM:SS format
+ */
+export function formatTime(seconds: bigint | number): string {
+  const totalSeconds = typeof seconds === "bigint" ? Number(seconds) : seconds;
+  if (totalSeconds <= 0) return "00:00";
+  
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+  
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  }
+  return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}

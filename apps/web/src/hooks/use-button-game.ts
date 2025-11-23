@@ -31,7 +31,7 @@ export function useGameState() {
     functionName: "getGameState",
     query: {
       enabled: isContractDeployed(BUTTON_GAME_ADDRESS),
-      refetchInterval: 5000, // Refetch every 5 seconds
+      refetchInterval: 1000,
     },
   });
 
@@ -206,11 +206,13 @@ export function useClaimPrize() {
     hash,
   });
 
-  const claimPrize = () => {
+  const claimPrize = (sponsorshipAmount: bigint = 0n) => {
     writeContract({
       address: BUTTON_GAME_ADDRESS,
       abi: BUTTON_GAME_ABI,
-      functionName: "claimPrize",
+      functionName: "claimPrizeAndStartNewGame",
+      args: [sponsorshipAmount],
+      value: sponsorshipAmount,
     });
   };
 

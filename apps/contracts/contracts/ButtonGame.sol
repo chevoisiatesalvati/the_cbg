@@ -14,6 +14,7 @@ contract ButtonGame is Ownable, ReentrancyGuard {
     uint256 public gameRound; // Current game round number
     address public lastPlayer; // Last player who pressed the button
     bool public gameActive; // Whether the game is active
+    uint256 public prizeFeePercentage; // Fee percentage on prize distribution (e.g., 5 = 5%)
 
     // Free play tracking: address => last free play timestamp
     mapping(address => uint256) public lastFreePlay;
@@ -37,6 +38,7 @@ contract ButtonGame is Ownable, ReentrancyGuard {
     event InitialPrizePoolConfigured(uint256 newAmount);
     event GameStatusChanged(bool active);
     event ProgressiveJackpotUpdated(uint256 newAmount);
+    event PrizeFeePercentageConfigured(uint256 newPercentage);
 
     constructor(
         address initialOwner,
@@ -47,6 +49,7 @@ contract ButtonGame is Ownable, ReentrancyGuard {
         timerDuration = _initialTimerDuration;
         entryFee = _initialEntryFee;
         initialPrizePool = _initialPrizePool;
+        prizeFeePercentage = 5; // Default 5% fee
         gameActive = true;
         gameRound = 1;
         
@@ -93,15 +96,12 @@ contract ButtonGame is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Claim prize when timer expires and automatically start new game
-     * Can be called even if there's nothing to claim (prizePool = 0 and no lastPlayer)
-     * This allows starting a new game when timer expires with no players
+     * @dev Claim prize when timer expires (only claims, does not start new game)
+     * Takes a fee percentage from the prize - the fee stays in contract balance for next game
      */
     function claimPrize() external nonReentrant {
         require(gameActive, "Game is not active");
         require(block.timestamp >= timerEnd, "Timer has not expired yet");
-        // Removed the require for prizePool/lastPlayer - allow claiming even with nothing to claim
-        // This enables starting a new game when timer expires with no players
 
         uint256 prize = prizePool;
         address winner = lastPlayer;
@@ -109,35 +109,97 @@ contract ButtonGame is Ownable, ReentrancyGuard {
 
         // Record winner only if there's actually a winner and prize
         if (winner != address(0) && prize > 0) {
+            // Calculate fee based on configured percentage
+            uint256 fee = (prize * prizeFeePercentage) / 100;
+            uint256 prizeToWinner = prize - fee;
+            
+            // Fee stays in contract balance automatically (we only transfer prizeToWinner)
+            // This fee will be part of the next game's prize pool
+
             WinnerInfo memory winnerInfo = WinnerInfo({
                 winner: winner,
-                prize: prize,
+                prize: prizeToWinner, // Record the actual amount winner receives
                 timestamp: block.timestamp,
                 round: currentRound
             });
             winners.push(winnerInfo);
             roundWinners[currentRound] = winnerInfo;
 
-            // Transfer prize to winner
-            (bool success, ) = winner.call{value: prize}("");
+            // Transfer prize to winner (minus fee)
+            // The fee remains in the contract balance
+            (bool success, ) = winner.call{value: prizeToWinner}("");
             require(success, "Prize transfer failed");
 
-            emit PrizeWon(winner, prize, currentRound);
+            emit PrizeWon(winner, prizeToWinner, currentRound);
         }
 
-        // Start new game automatically (even if there was nothing to claim)
+        // Reset prize pool and last player (but don't start new game)
+        prizePool = 0;
+        lastPlayer = address(0);
+    }
+
+    /**
+     * @dev Claim prize and start a new game with optional sponsorship
+     * @param sponsorshipAmount Amount to add to the new game's prize pool (in wei, can be 0)
+     * This function claims the prize (with fee), accepts optional sponsorship, and starts a new game
+     * The new game's prize pool will be the entire contract balance (fee from claim + sponsorship)
+     */
+    function claimPrizeAndStartNewGame(uint256 sponsorshipAmount) external payable nonReentrant {
+        require(gameActive, "Game is not active");
+        require(block.timestamp >= timerEnd, "Timer has not expired yet");
+        require(msg.value == sponsorshipAmount, "Sent value must match sponsorship amount");
+
+        uint256 prize = prizePool;
+        address winner = lastPlayer;
+        uint256 currentRound = gameRound;
+
+        // Record winner only if there's actually a winner and prize
+        if (winner != address(0) && prize > 0) {
+            // Calculate fee based on configured percentage
+            uint256 fee = (prize * prizeFeePercentage) / 100;
+            uint256 prizeToWinner = prize - fee;
+            
+            // Fee stays in contract balance automatically (we only transfer prizeToWinner)
+            // This fee will be part of the next game's prize pool
+
+            WinnerInfo memory winnerInfo = WinnerInfo({
+                winner: winner,
+                prize: prizeToWinner, // Record the actual amount winner receives
+                timestamp: block.timestamp,
+                round: currentRound
+            });
+            winners.push(winnerInfo);
+            roundWinners[currentRound] = winnerInfo;
+
+            // Transfer prize to winner (minus fee)
+            // The fee remains in the contract balance
+            (bool success, ) = winner.call{value: prizeToWinner}("");
+            require(success, "Prize transfer failed");
+
+            emit PrizeWon(winner, prizeToWinner, currentRound);
+        }
+
+        // Reset prize pool and last player before starting new game
+        prizePool = 0;
+        lastPlayer = address(0);
+
+        // Start new game with entire contract balance (includes fee from claim + sponsorship)
+        // Sponsorship is optional - can be 0 if contract balance already has funds
         _startNewGame();
     }
 
     /**
      * @dev Internal function to start a new game
+     * Uses the entire contract balance as the prize pool
+     * This includes: fees from previous claims, entry fees, and any sponsorship
      */
     function _startNewGame() internal {
         gameRound++;
         
-        // Reset game state - use contract balance or initial prize pool, whichever is available
-        uint256 contractBalance = address(this).balance;
-        prizePool = contractBalance >= initialPrizePool ? initialPrizePool : contractBalance;
+        // Use entire contract balance as prize pool
+        // This includes fees from previous claims, entry fees, and any sponsorship
+        prizePool = address(this).balance;
+        
         lastPlayer = address(0);
         timerEnd = block.timestamp + timerDuration;
 
@@ -154,6 +216,7 @@ contract ButtonGame is Ownable, ReentrancyGuard {
 
     /**
      * @dev Manually start a new game (admin only, for emergency)
+     * Uses entire contract balance as prize pool
      */
     function startNewGame() external onlyOwner {
         _startNewGame();
@@ -199,6 +262,16 @@ contract ButtonGame is Ownable, ReentrancyGuard {
     function setGameActive(bool _active) external onlyOwner {
         gameActive = _active;
         emit GameStatusChanged(_active);
+    }
+
+    /**
+     * @dev Admin function to configure prize fee percentage
+     * @param _newPercentage New fee percentage (e.g., 5 = 5%, 10 = 10%)
+     */
+    function setPrizeFeePercentage(uint256 _newPercentage) external onlyOwner {
+        require(_newPercentage <= 100, "Fee percentage cannot exceed 100");
+        prizeFeePercentage = _newPercentage;
+        emit PrizeFeePercentageConfigured(_newPercentage);
     }
 
     /**
