@@ -33,7 +33,7 @@ export function PlayerProfile({ address: propAddress }: PlayerProfileProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-celo-purple border-2 border-black p-4 text-white"
+      className="bg-cat-white border-4 border-cat-black p-4 text-cat-black"
     >
       <div className="font-inter text-xs font-750 uppercase tracking-wider mb-3">
         YOUR STATS
@@ -50,7 +50,7 @@ export function PlayerProfile({ address: propAddress }: PlayerProfileProps) {
       </div>
 
       {isLoading ? (
-        <div className="text-xs text-white opacity-70">Loading stats...</div>
+        <div className="text-xs text-cat-black opacity-70">Loading stats...</div>
       ) : (
         <div className="space-y-2">
           <div className="flex justify-between items-center">

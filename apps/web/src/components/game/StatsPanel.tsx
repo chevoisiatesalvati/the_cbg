@@ -18,17 +18,17 @@ export function StatsPanel({ entryFeeFormatted, isConnected, balanceFormatted, c
       transition={{ delay: 0.5 }}
       className="lg:col-span-1 space-y-3"
     >
-      <div className="bg-white border-2 border-black p-3">
-        <div className="font-inter text-xs font-750 uppercase tracking-wider mb-2 text-celo-brown">
+      <div className="bg-cat-white border-4 border-cat-black p-3">
+        <div className="font-inter text-xs font-750 uppercase tracking-wider mb-2 text-cat-black">
           ENTRY FEE
         </div>
-        <div className="font-alpina text-2xl font-light italic text-celo-purple">
+        <div className="font-alpina text-2xl font-light italic">
           {parseFloat(entryFeeFormatted).toFixed(4)} CELO
         </div>
       </div>
 
       {isConnected && (
-        <div className="bg-celo-purple border-2 border-black p-3 text-white">
+        <div className="bg-cat-white border-4 border-cat-black p-3 text-cat-black">
           <div className="font-inter text-xs font-750 uppercase tracking-wider mb-2">
             YOUR BALANCE
           </div>

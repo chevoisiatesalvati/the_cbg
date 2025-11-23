@@ -62,29 +62,29 @@ export function GameButton({
       {gameStateLoading || isPressing || isConfirming ? (
         <motion.button
           disabled
-          className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-yellow border-4 border-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(0,0,0,1)] transition-all"
+          className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-cat-yellow border-4 border-cat-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(35,31,32,1)] transition-all"
         >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center"
+            className="absolute inset-0 bg-cat-black bg-opacity-50 rounded-full flex items-center justify-center"
           >
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border-4 border-white border-t-transparent rounded-full"
+              className="w-12 h-12 border-4 border-cat-white border-t-transparent rounded-full"
             />
           </motion.div>
         </motion.button>
       ) : isClaiming || isClaimConfirming ? (
         <motion.button
           disabled
-          className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-green border-4 border-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(0,0,0,1)] transition-all"
+          className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-cat-darkPink border-4 border-cat-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(35,31,32,1)] transition-all"
         >
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 border-4 border-white border-t-transparent rounded-full"
+            className="w-12 h-12 border-4 border-cat-yellow border-t-transparent rounded-full"
           />
         </motion.button>
       ) : canPressButton ? (
@@ -93,18 +93,18 @@ export function GameButton({
           disabled={isPressing || isConfirming}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-yellow border-4 border-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] transition-all"
+          className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-cat-yellow border-4 border-cat-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(35,31,32,1)] hover:shadow-[3px_3px_0_0_rgba(35,31,32,1)] transition-all"
         >
           {isPressing || isConfirming ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center"
+              className="absolute inset-0 bg-cat-black bg-opacity-50 rounded-full flex items-center justify-center"
             >
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="w-12 h-12 border-4 border-white border-t-transparent rounded-full"
+                className="w-12 h-12 border-4 border-cat-white border-t-transparent rounded-full"
               />
             </motion.div>
           ) : (
@@ -117,11 +117,18 @@ export function GameButton({
           )}
           {isUsingFreePlay && !isPressing && !isConfirming && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 bg-celo-lime border-2 border-black px-3 py-1"
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="absolute -bottom-8 left-1/2 transform -translate-x-1/2"
             >
-              <span className="font-inter text-xs font-bold uppercase">FREE PLAY</span>
+              <div className="relative">
+                <div className="bg-cat-yellow border-4 border-cat-black px-4 py-2 shadow-[4px_4px_0_0_rgba(35,31,32,1)]">
+                  <span className="font-inter text-xs font-bold uppercase text-cat-black tracking-wider">
+                    🎁 FREE PLAY
+                  </span>
+                </div>
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-cat-black"></div>
+              </div>
             </motion.div>
           )}
         </motion.button>
@@ -131,23 +138,23 @@ export function GameButton({
           disabled={isClaiming}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-green border-4 border-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_0_rgba(0,0,0,1)] transition-all"
+          className="relative w-48 h-48 md:w-56 md:h-56 rounded-full bg-cat-darkPink border-4 border-cat-black flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[6px_6px_0_0_rgba(35,31,32,1)] hover:shadow-[3px_3px_0_0_rgba(35,31,32,1)] transition-all"
         >
           {isClaiming ? (
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border-4 border-white border-t-transparent rounded-full"
+              className="w-12 h-12 border-4 border-cat-yellow border-t-transparent rounded-full"
             />
           ) : (
-            <span className="font-inter font-bold text-white text-lg uppercase text-center px-4">
+            <span className="font-inter font-bold text-cat-yellow text-lg uppercase text-center px-4">
               CLAIM PRIZE
             </span>
           )}
         </motion.button>
       ) : !gameActive ? (
-        <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-celo-tan-medium border-4 border-black flex items-center justify-center">
-          <span className="font-inter font-bold text-celo-brown text-sm uppercase text-center px-4">
+        <div className="w-48 h-48 md:w-56 md:h-56 rounded-full bg-cat-darkPink border-4 border-cat-black flex items-center justify-center">
+          <span className="font-inter font-bold text-cat-yellow text-sm uppercase text-center px-4">
             GAME INACTIVE
           </span>
         </div>
@@ -159,7 +166,7 @@ export function GameButton({
           animate={{ opacity: 1 }}
           className="mt-3 text-center"
         >
-          <div className="font-inter text-xs font-750 uppercase text-celo-brown">
+          <div className="font-inter text-xs font-750 uppercase text-cat-black">
             NEXT FREE: {formatTime(timeUntilFreePlay)}
           </div>
         </motion.div>
@@ -171,7 +178,7 @@ export function GameButton({
           animate={{ opacity: 1 }}
           className="mt-3 text-center"
         >
-          <div className="font-inter text-xs font-750 uppercase text-celo-brown mb-1">
+          <div className="font-inter text-xs font-750 uppercase text-cat-black mb-1">
             LAST PLAYER
           </div>
           <div className="flex items-center justify-center gap-2">
@@ -183,15 +190,15 @@ export function GameButton({
               className="justify-center"
             />
             {lastPlayer === address && (
-              <span className="ml-2 text-celo-green font-bold text-xs">(YOU)</span>
+              <span className="ml-2 text-cat-darkPink font-bold text-xs">(YOU)</span>
             )}
           </div>
         </motion.div>
       )}
 
       {!gameActive && (
-        <div className="mt-4 p-3 bg-celo-tan-medium border-2 border-black text-center">
-          <div className="font-inter font-bold text-celo-brown uppercase text-sm">
+        <div className="mt-4 p-3 bg-cat-darkPink border-2 border-cat-black text-center">
+          <div className="font-inter font-bold text-cat-yellow uppercase text-sm">
             GAME INACTIVE
           </div>
         </div>

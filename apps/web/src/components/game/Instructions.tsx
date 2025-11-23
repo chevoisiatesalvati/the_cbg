@@ -12,9 +12,9 @@ export function Instructions({ entryFeeFormatted }: InstructionsProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.6 }}
-      className="mt-16 bg-white border-4 border-black p-12"
+      className="mt-16 bg-cat-white border-4 border-cat-black p-12"
     >
-      <h2 className="font-alpina text-5xl font-light italic text-celo-purple mb-8 tracking-tighter">
+      <h2 className="font-alpina text-5xl font-light italic text-cat-black mb-8 tracking-tighter">
         HOW TO <span className="not-italic">PLAY</span>
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -31,11 +31,11 @@ export function Instructions({ entryFeeFormatted }: InstructionsProps) {
             transition={{ delay: 0.7 + idx * 0.1 }}
             className="flex gap-4"
           >
-            <div className="bg-celo-yellow border-2 border-black p-4 w-16 h-16 flex items-center justify-center">
-              <span className="font-inter font-bold text-lg">{item.num}</span>
+            <div className="bg-cat-yellow border-2 border-cat-black p-4 w-16 h-16 flex items-center justify-center">
+              <span className="font-inter font-bold text-lg text-cat-black">{item.num}</span>
             </div>
             <div className="flex-1 pt-4">
-              <p className="font-inter font-750 text-celo-brown uppercase text-sm leading-tight">
+              <p className="font-inter font-750 text-cat-black uppercase text-sm leading-tight">
                 {item.text}
               </p>
             </div>

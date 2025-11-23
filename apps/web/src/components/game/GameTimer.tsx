@@ -15,8 +15,8 @@ export function GameTimer({ timeRemaining, canClaimPrize, isLoading }: GameTimer
     <div
       className={`mb-4 border-2 p-3 w-full ${
         isExpired
-          ? "bg-celo-orange text-black border-black"
-          : "bg-black text-celo-yellow border-celo-yellow"
+          ? "bg-cat-yellow text-cat-black border-cat-black"
+          : "bg-cat-black text-cat-yellow border-cat-yellow"
       }`}
     >
       <div className="font-inter text-xs font-750 uppercase tracking-wider mb-1 text-center">

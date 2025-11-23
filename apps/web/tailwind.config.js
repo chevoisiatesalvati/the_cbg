@@ -15,18 +15,25 @@ module.exports = {
     },
     extend: {
       colors: {
-        // Celo Brand Colors
+        // Retro Pink Cat Brand Colors
+        cat: {
+          pink: "#F892B0",        // Main pink (background and facial highlights)
+          black: "#231F20",        // Cat outline and main fur
+          yellow: "#FFE400",       // Cat eyes and teeth
+          darkPink: "#DC5F7F",     // Contrast details, inner ear
+          white: "#FFFFFF",        // Teeth highlights
+        },
+        // Legacy Celo colors (kept for compatibility, can be removed later)
         celo: {
-          yellow: "#FCFF52",
+          yellow: "#FFE400",
           green: "#4E632A",
-          purple: "#1A0329",
+          purple: "#231F20",
           tan: {
-            light: "#FBF6F1",
-            medium: "#E6E3D5",
+            light: "#F892B0",
+            medium: "#DC5F7F",
           },
-          brown: "#635949",
-          // Accents
-          pink: "#F2A9E7",
+          brown: "#231F20",
+          pink: "#F892B0",
           orange: "#F29E5F",
           lime: "#B2EBA1",
           blue: "#8AC0F9",

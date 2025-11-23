@@ -34,15 +34,15 @@ export function RecentPlayers({ initialCount = 3, maxCount = 10 }: RecentPlayers
   }
 
   return (
-    <div className="bg-white border-2 border-black p-3">
+    <div className="bg-cat-white border-4 border-cat-black p-3">
       <div className="flex items-center justify-between mb-2">
-        <div className="font-inter text-xs font-750 uppercase tracking-wider text-celo-brown">
+        <div className="font-inter text-xs font-750 uppercase tracking-wider text-cat-black">
           RECENT PLAYERS
         </div>
         {recentPlayers.length > initialCount && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs font-inter font-bold uppercase text-celo-blue hover:text-celo-purple transition-colors"
+            className="text-xs font-inter font-bold uppercase text-cat-darkPink hover:text-cat-black transition-colors"
           >
             {isExpanded ? "SHOW LESS" : `SHOW ALL (${recentPlayers.length})`}
           </button>
@@ -63,7 +63,7 @@ export function RecentPlayers({ initialCount = 3, maxCount = 10 }: RecentPlayers
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className="flex items-center justify-between border-2 border-black p-2"
+              className="flex items-center justify-between border-2 border-cat-black p-2"
             >
               <div className="flex items-center gap-2 flex-1">
                 <EnsAddress
@@ -73,12 +73,12 @@ export function RecentPlayers({ initialCount = 3, maxCount = 10 }: RecentPlayers
                   showAddress={true}
                 />
                 {player.isFreePlay && (
-                  <span className="text-xs font-inter font-bold uppercase text-celo-lime bg-celo-lime bg-opacity-20 px-1">
-                    FREE
+                  <span className="text-xs font-inter font-bold uppercase text-cat-black bg-cat-yellow border-2 border-cat-black px-2 py-0.5">
+                    🎁 FREE
                   </span>
                 )}
               </div>
-              <div className="text-xs font-inter text-celo-brown">
+              <div className="text-xs font-inter text-cat-black">
                 {formatTimeAgo(player.timestamp)}
               </div>
             </motion.div>

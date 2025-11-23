@@ -6,6 +6,7 @@ import { ExternalLink } from "lucide-react"
 import { Wallet, Connect, Avatar, Name } from "@composer-kit/ui/wallet"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { useChainId } from "wagmi"
+import Image from "next/image"
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -17,13 +18,21 @@ export function Navbar() {
   const chainId = useChainId()
   
   return (
-    <header className="sticky top-0 z-50 w-full border-b-2 border-black bg-background backdrop-blur-md supports-[backdrop-filter]:bg-background/95">
+    <header className="sticky top-0 z-50 w-full border-b-4 border-cat-black bg-cat-white backdrop-blur-md supports-[backdrop-filter]:bg-cat-white/95">
       <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          {/* Title */}
-          <Link href="/" className="hover:opacity-80 transition-opacity">
-            <h1 className="font-alpina text-2xl md:text-3xl font-light tracking-tighter text-celo-purple">
-              THE <span className="italic border-b-2 border-celo-yellow">CBG</span>
+        <div className="flex items-center gap-3">
+          {/* Cat Logo */}
+          <Link href="/" className="hover:opacity-80 transition-opacity flex items-center gap-2">
+            <Image
+              src="/cat-serious.webp"
+              alt="Pink Cat"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
+            {/* Title */}
+            <h1 className="font-alpina text-2xl md:text-3xl font-light tracking-tighter text-cat-black">
+              THE <span className="italic border-b-2 border-cat-yellow">CBG</span>
             </h1>
           </Link>
         </div>
@@ -36,10 +45,10 @@ export function Navbar() {
               href={link.href}
               target={link.external ? "_blank" : undefined}
               rel={link.external ? "noopener noreferrer" : undefined}
-              className={`flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-primary ${
+              className={`flex items-center gap-1.5 text-sm font-bold uppercase transition-colors ${
                 pathname === link.href
-                  ? "text-foreground"
-                  : "text-foreground/70"
+                  ? "text-cat-black"
+                  : "text-cat-black/70 hover:text-cat-darkPink"
               }`}
             >
               {link.name}
@@ -70,9 +79,10 @@ export function Navbar() {
                     <button
                       onClick={openChainModal}
                       type="button"
-                      className="px-3 py-1.5 text-sm font-medium border-2 border-black bg-white text-black rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-celo-yellow flex items-center gap-2"
+                      className="px-3 py-1.5 text-sm font-bold uppercase border-2 border-cat-black bg-cat-white text-cat-black hover:bg-cat-yellow focus:outline-none focus:ring-2 focus:ring-cat-yellow flex items-center gap-2 transition-colors"
+                      title={chain.name}
                     >
-                      {chain.hasIcon && (
+                      {chain.hasIcon && chain.iconUrl ? (
                         <div
                           style={{
                             background: chain.iconBackground,
@@ -82,16 +92,18 @@ export function Navbar() {
                             overflow: 'hidden',
                           }}
                         >
-                          {chain.iconUrl && (
-                            <img
-                              alt={chain.name ?? 'Chain icon'}
-                              src={chain.iconUrl}
-                              style={{ width: 16, height: 16 }}
-                            />
-                          )}
+                          <img
+                            alt={chain.name ?? 'Chain icon'}
+                            src={chain.iconUrl}
+                            style={{ width: 16, height: 16 }}
+                          />
                         </div>
+                      ) : (
+                        <span className="md:hidden text-xs">
+                          {chain.name ? chain.name.substring(0, 8) : 'CHAIN'}
+                        </span>
                       )}
-                      <span>{chain.name}</span>
+                      <span className="hidden md:inline max-w-[120px] truncate">{chain.name}</span>
                     </button>
                   )}
                 </div>

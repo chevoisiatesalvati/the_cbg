@@ -16,7 +16,7 @@ export function ChainWarning({ isConnected, isWrongChain }: ChainWarningProps) {
     <motion.div
       initial={{ scale: 0.95 }}
       animate={{ scale: 1 }}
-      className="mb-3 p-3 bg-celo-orange border-2 border-black text-black font-inter font-bold text-sm"
+      className="mb-3 p-3 bg-cat-yellow border-2 border-cat-black text-cat-black font-inter font-bold text-sm"
     >
       ⚠️ SWITCH TO CELO MAINNET OR CELO SEPOLIA TESTNET
     </motion.div>
@@ -40,7 +40,7 @@ export function ContractWarning({ isConnected, isWrongChain }: ContractWarningPr
     <motion.div
       initial={{ scale: 0.95 }}
       animate={{ scale: 1 }}
-      className="mb-3 p-3 bg-celo-yellow border-2 border-black text-black font-inter font-bold text-sm"
+      className="mb-3 p-3 bg-cat-yellow border-2 border-cat-black text-cat-black font-inter font-bold text-sm"
     >
       ⚠️ CONTRACTS NOT DEPLOYED
     </motion.div>
@@ -70,7 +70,7 @@ export function BalanceWarning({
     <motion.div
       initial={{ scale: 0.95 }}
       animate={{ scale: 1 }}
-      className="mb-3 p-3 bg-celo-pink border-2 border-black text-black font-inter font-bold text-sm"
+      className="mb-3 p-3 bg-cat-pink border-2 border-cat-black text-cat-black font-inter font-bold text-sm"
     >
       INSUFFICIENT BALANCE: {parseFloat(entryFeeFormatted).toFixed(4)} CELO REQUIRED
     </motion.div>

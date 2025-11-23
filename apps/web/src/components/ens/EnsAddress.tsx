@@ -39,7 +39,7 @@ export function EnsAddress({
         <img
           src={displayAvatar}
           alt={displayName || address}
-          className="rounded-full border border-black"
+          className="rounded-full border border-cat-black"
           style={{ width: avatarSize, height: avatarSize }}
           onError={(e) => {
             // Hide avatar on error

@@ -190,7 +190,7 @@ export default function Home() {
     !isClaiming;
 
   return (
-    <main className="min-h-screen bg-celo-tan-light">
+    <main className="min-h-screen bg-cat-pink">
       <div className="container mx-auto px-4 py-4 md:py-6 max-w-6xl">
         {/* Round indicator */}
         {gameState && (

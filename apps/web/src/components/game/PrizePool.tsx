@@ -22,7 +22,7 @@ export function PrizePool({ prizePool, progressiveJackpot, isLoading }: PrizePoo
       transition={{ delay: 0.3 }}
       className="lg:col-span-1"
     >
-      <div className="bg-celo-green border-2 border-black p-4 text-white">
+      <div className="bg-cat-white border-4 border-cat-black p-4 text-cat-black">
         <div className="font-inter text-xs font-750 uppercase tracking-wider mb-2">
           PRIZE POOL
         </div>
@@ -43,7 +43,7 @@ export function PrizePool({ prizePool, progressiveJackpot, isLoading }: PrizePoo
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-3 pt-3 border-t-2 border-white"
+            className="mt-3 pt-3 border-t-2 border-cat-black"
           >
             <div className="font-inter text-xs font-750 uppercase tracking-wider mb-1">
               JACKPOT
