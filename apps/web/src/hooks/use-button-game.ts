@@ -3,6 +3,7 @@ import { BUTTON_GAME_ABI, getButtonGameAddress } from "@/lib/contracts";
 import { useAccount } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { useEffect, useCallback, useMemo } from "react";
+import { celo, celoSepolia } from "wagmi/chains";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
 const isContractDeployed = (address: `0x${string}`) => address !== ZERO_ADDRESS;
@@ -171,6 +172,7 @@ export function useUserBalance() {
 
 export function usePressButton() {
   const contractAddress = useButtonGameAddress();
+  const chainId = useChainId();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
@@ -179,6 +181,19 @@ export function usePressButton() {
   const { isEligible } = useFreePlayEligibility();
 
   const pressButton = () => {
+    // Validate chain before proceeding
+    const isWrongChain = chainId !== celo.id && chainId !== celoSepolia.id;
+    if (isWrongChain) {
+      console.error("Wrong chain. Please switch to Celo Mainnet or Celo Sepolia Testnet.");
+      return;
+    }
+
+    // Validate contract is deployed on current chain
+    if (contractAddress === ZERO_ADDRESS) {
+      console.error("Contract not deployed on current chain.");
+      return;
+    }
+
     // Automatically use free play if eligible, otherwise use entry fee
     const useFreePlay = isEligible ?? false;
     
@@ -214,12 +229,26 @@ export function usePressButton() {
 
 export function useClaimPrize() {
   const contractAddress = useButtonGameAddress();
+  const chainId = useChainId();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   });
 
   const claimPrize = (sponsorshipAmount: bigint = 0n) => {
+    // Validate chain before proceeding
+    const isWrongChain = chainId !== celo.id && chainId !== celoSepolia.id;
+    if (isWrongChain) {
+      console.error("Wrong chain. Please switch to Celo Mainnet or Celo Sepolia Testnet.");
+      return;
+    }
+
+    // Validate contract is deployed on current chain
+    if (contractAddress === ZERO_ADDRESS) {
+      console.error("Contract not deployed on current chain.");
+      return;
+    }
+
     writeContract({
       address: contractAddress,
       abi: BUTTON_GAME_ABI,
