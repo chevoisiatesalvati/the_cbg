@@ -19,24 +19,21 @@ This project integrates with Celo through:
 
 The integration leverages Celo's mobile-first approach and low gas fees to create an accessible, engaging gaming experience on-chain.
 
-## Team
-
-**Andrea Salvemini** - Developer
-- Telegram: [@MrSaulman](https://t.me/MrSaulman)
-- X (Twitter): [@Saul2078](https://x.com/Saul2078)
-
 ## Getting Started
 
 1. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 2. Set up environment variables (see [SETUP.md](./SETUP.md) for details):
+
    - Frontend: Copy `apps/web/.env.example` to `apps/web/.env.local`
    - Contracts: Copy `apps/contracts/.env.example` to `apps/contracts/.env`
 
 3. Deploy contracts (see [SETUP.md](./SETUP.md)):
+
    ```bash
    cd apps/contracts
    pnpm deploy:alfajores
@@ -45,6 +42,7 @@ The integration leverages Celo's mobile-first approach and low gas fees to creat
 4. Update frontend `.env.local` with deployed contract addresses
 
 5. Start the development server:
+
    ```bash
    pnpm dev
    ```
